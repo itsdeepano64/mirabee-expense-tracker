@@ -2,6 +2,7 @@ export type Category = {
   id: string;
   name: string;
   is_cogs_default: boolean;
+  is_pinned: boolean;
   sort_order: number;
 };
 
@@ -25,6 +26,9 @@ export type DashboardStats = {
   total: number;
   cogsTotal: number;
   nonCogsTotal: number;
+  expenseCount: number;
+  topCategory: { name: string; total: number } | null;
+  averageExpense: number;
 };
 
 export type CategoryBreakdown = {

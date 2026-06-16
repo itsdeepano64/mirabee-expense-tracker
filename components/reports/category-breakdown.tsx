@@ -16,15 +16,17 @@ export function CategoryBreakdownReport({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <Card>
+        <Card className="border-primary/20">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
               Total spend
             </p>
-            <p className="mt-1 text-2xl font-bold">{formatCurrency(total)}</p>
+            <p className="mt-1 text-2xl font-bold text-primary">
+              {formatCurrency(total)}
+            </p>
           </CardContent>
         </Card>
-        <Card className="border-sage/20 bg-sage/5">
+        <Card className="border-sage/30 bg-sage/5">
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-wide text-sage-dark">COGS</p>
             <p className="mt-1 text-2xl font-bold text-sage-dark">
@@ -38,9 +40,9 @@ export function CategoryBreakdownReport({
         <CardHeader>
           <CardTitle className="text-base">Spending by category</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {breakdown.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-4">
+            <p className="py-4 text-center text-sm text-muted-foreground">
               No expenses in this date range.
             </p>
           ) : (
@@ -52,9 +54,9 @@ export function CategoryBreakdownReport({
                     {formatCurrency(item.total)} ({item.percentage.toFixed(0)}%)
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-rose/10">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-rose transition-all"
+                    className="h-full rounded-full bg-primary transition-all"
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>

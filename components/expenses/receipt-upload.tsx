@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 
 type ReceiptUploadProps = {
   onFileChange: (file: File | null) => void;
+  existingUrl?: string | null;
 };
 
-export function ReceiptUpload({ onFileChange }: ReceiptUploadProps) {
+export function ReceiptUpload({ onFileChange, existingUrl }: ReceiptUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+
+  const displayUrl = preview ?? existingUrl ?? null;
 
   function handleChange(file: File | null) {
     if (preview) URL.revokeObjectURL(preview);
@@ -38,10 +41,10 @@ export function ReceiptUpload({ onFileChange }: ReceiptUploadProps) {
         onChange={(e) => handleChange(e.target.files?.[0] ?? null)}
       />
 
-      {preview ? (
-        <div className="relative overflow-hidden rounded-xl border border-rose/20">
+      {displayUrl ? (
+        <div className="relative overflow-hidden rounded-xl border border-border">
           <Image
-            src={preview}
+            src={displayUrl}
             alt="Receipt preview"
             width={400}
             height={300}
@@ -52,7 +55,7 @@ export function ReceiptUpload({ onFileChange }: ReceiptUploadProps) {
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-2 bg-white/90"
+            className="absolute right-2 top-2 bg-card/90"
             onClick={() => handleChange(null)}
           >
             <X className="h-4 w-4" />
@@ -62,9 +65,9 @@ export function ReceiptUpload({ onFileChange }: ReceiptUploadProps) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-rose/30 bg-rose/5 text-sm text-muted-foreground transition-colors hover:bg-rose/10"
+          className="flex h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 text-sm text-muted-foreground transition-colors hover:bg-muted"
         >
-          <Camera className="h-6 w-6 text-rose-dark" />
+          <Camera className="h-6 w-6 text-primary" />
           Tap to take photo or choose from gallery
         </button>
       )}

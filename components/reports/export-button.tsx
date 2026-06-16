@@ -1,7 +1,6 @@
 "use client";
 
 import { Download } from "lucide-react";
-
 import type { ExpenseWithCategory } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
@@ -46,7 +45,7 @@ export function ExportButton({ expenses, startDate, endDate }: ExportButtonProps
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant="outline"
       className="w-full sm:w-auto"
       onClick={handleExport}
       disabled={expenses.length === 0}

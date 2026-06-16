@@ -7,13 +7,13 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Expense tracking for Mirabee Flowers",
     start_url: "/",
     display: "standalone",
-    background_color: "#fdf8f6",
-    theme_color: "#e8a0b4",
+    background_color: "#FDF8F3",
+    theme_color: "#6BA8BA",
     icons: [
       {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: "/mirabee-logo.png",
+        sizes: "512x512",
+        type: "image/png",
       },
     ],
   };

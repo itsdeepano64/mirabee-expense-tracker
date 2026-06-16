@@ -1,13 +1,12 @@
 import { Suspense } from "react";
-import {
-  endOfMonth,
-  format,
-  startOfMonth,
-} from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import { getCategories, getExpenses } from "@/lib/actions/expenses";
 import type { Category, ExpenseWithCategory } from "@/lib/types";
-import { ExpenseCard } from "@/components/expenses/expense-card";
+import { PageHeader } from "@/components/brand/page-header";
+import { ExpenseSearchBar } from "@/components/expenses/expense-search-bar";
+import { QuickFilterChips } from "@/components/expenses/quick-filter-chips";
 import { ExpenseFilters } from "@/components/expenses/expense-filters";
+import { ExpensesPageClient } from "@/components/expenses/expenses-page-client";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +15,8 @@ type ExpensesPageProps = {
     start?: string;
     end?: string;
     category?: string;
+    categories?: string;
+    q?: string;
   }>;
 };
 
@@ -24,7 +25,12 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
   const now = new Date();
   const startDate = params.start ?? format(startOfMonth(now), "yyyy-MM-dd");
   const endDate = params.end ?? format(endOfMonth(now), "yyyy-MM-dd");
-  const categoryId = params.category;
+  const search = params.q;
+  const categoryIds = params.categories
+    ? params.categories.split(",").filter(Boolean)
+    : params.category
+      ? [params.category]
+      : undefined;
 
   let expenses: ExpenseWithCategory[] = [];
   let categories: Category[] = [];
@@ -32,11 +38,7 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
   try {
     [expenses, categories] = await Promise.all([
-      getExpenses({
-        startDate,
-        endDate,
-        categoryId: categoryId || undefined,
-      }),
+      getExpenses({ startDate, endDate, categoryIds, search }),
       getCategories(),
     ]);
   } catch (e) {
@@ -45,38 +47,30 @@ export default async function ExpensesPage({ searchParams }: ExpensesPageProps) 
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Expenses</h1>
-        <p className="text-sm text-muted-foreground">
-          Filter and review all shop expenses
-        </p>
-      </div>
+      <PageHeader
+        title="Expenses"
+        subtitle="Search, filter, and manage shop expenses"
+      />
 
-      <Suspense fallback={<div className="h-32 animate-pulse rounded-2xl bg-rose/5" />}>
-        <ExpenseFilters
-          categories={categories}
-          defaultStart={startDate}
-          defaultEnd={endDate}
-        />
+      <Suspense fallback={<div className="h-12 animate-pulse rounded-xl bg-muted" />}>
+        <ExpenseSearchBar />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-8 animate-pulse rounded-xl bg-muted" />}>
+        <QuickFilterChips categories={categories} />
+      </Suspense>
+
+      <Suspense fallback={<div className="h-24 animate-pulse rounded-xl bg-muted" />}>
+        <ExpenseFilters defaultStart={startDate} defaultEnd={endDate} />
       </Suspense>
 
       {error && (
-        <div className="rounded-xl border border-rose/30 bg-rose/5 p-4 text-sm text-rose-dark">
-          {error}. Check your Supabase setup in .env.local
+        <div className="rounded-xl border border-accent-rose/30 bg-accent-rose/5 p-4 text-sm text-accent-rose">
+          {error}. Check your Supabase setup and run migration-v2.sql
         </div>
       )}
 
-      <div className="space-y-3">
-        {expenses.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-rose/20 bg-white p-8 text-center">
-            <p className="text-muted-foreground">No expenses found for this period.</p>
-          </div>
-        ) : (
-          expenses.map((expense) => (
-            <ExpenseCard key={expense.id} expense={expense} />
-          ))
-        )}
-      </div>
+      <ExpensesPageClient expenses={expenses} categories={categories} />
     </div>
   );
 }

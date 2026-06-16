@@ -2,25 +2,33 @@
 @import "react-day-picker/style.css";
 
 :root {
-  --background: #fdf8f6;
-  --foreground: #3d2c2e;
-  --card-foreground: #3d2c2e;
-  --muted-foreground: #8a7074;
-  --rose: #e8a0b4;
-  --rose-dark: #c76b8a;
-  --sage: #8faf8f;
-  --sage-dark: #5c7a5c;
+  --background: #fdf8f3;
+  --foreground: #3a2f2f;
+  --card: #ffffff;
+  --card-foreground: #3a2f2f;
+  --muted: #ede4db;
+  --muted-foreground: #7a6e68;
+  --primary: #6ba8ba;
+  --primary-foreground: #ffffff;
+  --accent-rose: #e07a8c;
+  --sage: #8fae8b;
+  --sage-dark: #5c7a58;
+  --border: #ede4db;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-rose: var(--rose);
-  --color-rose-dark: var(--rose-dark);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent-rose: var(--accent-rose);
   --color-sage: var(--sage);
   --color-sage-dark: var(--sage-dark);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
 }
 

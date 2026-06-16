@@ -11,9 +11,9 @@ function Calendar({ className, classNames, ...props }: CalendarProps) {
     <DayPicker
       className={cn("p-2", className)}
       classNames={{
-        day_button: "h-9 w-9 rounded-lg hover:bg-rose/10",
-        selected: "bg-rose text-white hover:bg-rose hover:text-white",
-        today: "bg-rose/10 text-rose-dark font-semibold",
+        day_button: "h-9 w-9 rounded-lg hover:bg-muted",
+        selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+        today: "bg-primary/10 text-primary font-semibold",
         ...classNames,
       }}
       {...props}

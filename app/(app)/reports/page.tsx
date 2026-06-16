@@ -1,17 +1,16 @@
 import { Suspense } from "react";
-import {
-  endOfMonth,
-  format,
-  startOfMonth,
-} from "date-fns";
+import { endOfMonth, format, startOfMonth } from "date-fns";
 import {
   getCategoryBreakdown,
   getExpenses,
 } from "@/lib/actions/expenses";
 import type { CategoryBreakdown, ExpenseWithCategory } from "@/lib/types";
+import { PageHeader } from "@/components/brand/page-header";
 import { DateRangePicker } from "@/components/reports/date-range-picker";
 import { CategoryBreakdownReport } from "@/components/reports/category-breakdown";
+import { ExportPdfButton } from "@/components/reports/export-pdf-button";
 import { ExportButton } from "@/components/reports/export-button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -48,26 +47,17 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Reports</h1>
-          <p className="text-sm text-muted-foreground">
-            Spending breakdown and export
-          </p>
-        </div>
-        <ExportButton
-          expenses={expenses}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      </div>
+      <PageHeader
+        title="Reports"
+        subtitle="Spending breakdown and export"
+      />
 
-      <Suspense fallback={<div className="h-32 animate-pulse rounded-2xl bg-rose/5" />}>
+      <Suspense fallback={<div className="h-32 animate-pulse rounded-2xl bg-muted" />}>
         <DateRangePicker defaultStart={startDate} defaultEnd={endDate} />
       </Suspense>
 
       {error && (
-        <div className="rounded-xl border border-rose/30 bg-rose/5 p-4 text-sm text-rose-dark">
+        <div className="rounded-xl border border-accent-rose/30 bg-accent-rose/5 p-4 text-sm text-accent-rose">
           {error}. Check your Supabase setup in .env.local
         </div>
       )}
@@ -77,6 +67,24 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         total={total}
         cogsTotal={cogsTotal}
       />
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-end">
+          <ExportPdfButton
+            expenses={expenses}
+            breakdown={breakdown}
+            startDate={startDate}
+            endDate={endDate}
+            total={total}
+            cogsTotal={cogsTotal}
+          />
+          <ExportButton
+            expenses={expenses}
+            startDate={startDate}
+            endDate={endDate}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

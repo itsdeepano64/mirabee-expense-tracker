@@ -1,5 +1,6 @@
 import { getCategories } from "@/lib/actions/expenses";
 import type { Category } from "@/lib/types";
+import { PageHeader } from "@/components/brand/page-header";
 import { ExpenseForm } from "@/components/expenses/expense-form";
 
 export const dynamic = "force-dynamic";
@@ -16,15 +17,13 @@ export default async function NewExpensePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Add Expense</h1>
-        <p className="text-sm text-muted-foreground">
-          Quick entry with optional receipt photo
-        </p>
-      </div>
+      <PageHeader
+        title="Add Expense"
+        subtitle="Quick entry — tap save when done"
+      />
 
       {error ? (
-        <div className="rounded-xl border border-rose/30 bg-rose/5 p-4 text-sm text-rose-dark">
+        <div className="rounded-xl border border-accent-rose/30 bg-accent-rose/5 p-4 text-sm text-accent-rose">
           {error}. Check your Supabase setup in .env.local
         </div>
       ) : (

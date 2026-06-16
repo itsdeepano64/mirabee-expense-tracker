@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Card, CardContent } from "@/components/ui/card";
 
 const presets = [
   {
@@ -68,41 +69,43 @@ export function DateRangePicker({
   }
 
   return (
-    <div className="space-y-4 rounded-2xl border border-rose/10 bg-white p-4 shadow-sm">
-      <p className="text-sm font-medium">Date range</p>
-      <div className="flex flex-wrap gap-2">
-        {presets.map((preset) => {
-          const range = preset.getRange();
-          const active = start === range.start && end === range.end;
-          return (
-            <Button
-              key={preset.label}
-              type="button"
-              variant={active ? "default" : "outline"}
-              size="sm"
-              onClick={() => setRange(range.start, range.end)}
-            >
-              {preset.label}
-            </Button>
-          );
-        })}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>From</Label>
-          <DatePicker
-            value={start ? parseISO(start) : undefined}
-            onChange={(date) => setRange(date ? format(date, "yyyy-MM-dd") : "", end)}
-          />
+    <Card>
+      <CardContent className="space-y-4 p-4">
+        <p className="text-sm font-medium">Date range</p>
+        <div className="flex flex-wrap gap-2">
+          {presets.map((preset) => {
+            const range = preset.getRange();
+            const active = start === range.start && end === range.end;
+            return (
+              <Button
+                key={preset.label}
+                type="button"
+                variant={active ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRange(range.start, range.end)}
+              >
+                {preset.label}
+              </Button>
+            );
+          })}
         </div>
-        <div className="space-y-2">
-          <Label>To</Label>
-          <DatePicker
-            value={end ? parseISO(end) : undefined}
-            onChange={(date) => setRange(start, date ? format(date, "yyyy-MM-dd") : "")}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>From</Label>
+            <DatePicker
+              value={start ? parseISO(start) : undefined}
+              onChange={(date) => setRange(date ? format(date, "yyyy-MM-dd") : "", end)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>To</Label>
+            <DatePicker
+              value={end ? parseISO(end) : undefined}
+              onChange={(date) => setRange(start, date ? format(date, "yyyy-MM-dd") : "")}
+            />
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
