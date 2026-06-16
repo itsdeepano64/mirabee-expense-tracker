@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, TrendingUp, Leaf, Tag, Bell, Settings, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, Leaf, Tag, Settings, ChevronRight } from 'lucide-react';
 import { AppShell } from '@/components/shell/app-shell';
 import { MirabeeLogo } from '@/components/brand/mirabee-logo';
 import { getDashboardStats } from '@/lib/actions/expenses';
@@ -67,18 +67,13 @@ export default function DashboardPage() {
   const dashHeader = (
     <header className="mb-app-header">
       <MirabeeLogo size="sm" showWordmark direction="row" />
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button className="mb-hdr-btn" aria-label="Notifications">
-          <Bell size={17} />
-        </button>
-        <button
-          className="mb-hdr-btn"
-          aria-label="Settings"
-          onClick={() => router.push('/settings')}
-        >
-          <Settings size={17} />
-        </button>
-      </div>
+      <button
+        className="mb-hdr-btn"
+        aria-label="Settings"
+        onClick={() => router.push('/settings')}
+      >
+        <Settings size={17} />
+      </button>
     </header>
   );
 
