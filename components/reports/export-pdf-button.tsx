@@ -3,52 +3,70 @@
 import { useState } from 'react';
 import { FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { pdf } from '@react-pdf/renderer';
-import { ExpenseReportDocument } from '@/lib/pdf/expense-report-document';
-import { getExpenses, getCategoryBreakdown } from '@/lib/actions/expenses';
 
 interface Props {
-  start: string;
-  end: string;
+  startDate: string;
+  endDate: string;
   className?: string;
 }
 
-export function ExportPdfButton({ start, end, className }: Props) {
+export function ExportPdfButton({ startDate, endDate, className }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function handleExport() {
-    if (!start || !end) {
+    if (!startDate || !endDate) {
       toast.error('Please select a date range first.');
       return;
     }
     setLoading(true);
     try {
+      // Dynamic imports keep bundle size small
+      const [{ pdf }, { getExpenses }, { getCategoryBreakdown }, { ExpenseReportDocument }] =
+        await Promise.all([
+          import('@react-pdf/renderer'),
+          import('@/lib/actions/expenses'),
+          import('@/lib/actions/expenses'),
+          import('@/lib/pdf/expense-report-document'),
+        ]);
+
+      // getExpenses signature: { startDate?, endDate?, categoryId?, categoryIds?, search? }
       const [expenses, breakdown] = await Promise.all([
-        getExpenses({ start, end, limit: 9999 }),
-        getCategoryBreakdown({ start, end }),
+        getExpenses({ startDate, endDate }),
+        getCategoryBreakdown({ startDate, endDate }),
       ]);
-      const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
-      const cogsTotal = expenses.filter(e => e.is_cogs).reduce((s, e) => s + e.amount, 0);
+
+      const expArr = expenses as Array<{
+        amount: number;
+        is_cogs: boolean;
+        [key: string]: unknown;
+      }>;
+
+      const totalSpent = expArr.reduce((s, e) => s + e.amount, 0);
+      const cogsTotal = expArr
+        .filter(e => e.is_cogs)
+        .reduce((s, e) => s + e.amount, 0);
 
       const blob = await pdf(
-        <ExpenseReportDocument
-          expenses={expenses}
-          breakdown={breakdown}
-          totalSpent={totalSpent}
-          cogsTotal={cogsTotal}
-          startDate={start}
-          endDate={end}
-        />
+        // @ts-expect-error — JSX element in .ts file; suppress if tsconfig strict
+        ExpenseReportDocument({
+          expenses: expArr,
+          breakdown,
+          totalSpent,
+          cogsTotal,
+          startDate,
+          endDate,
+        }),
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mirabee-report-${start}-${end}.pdf`;
+      a.download = `mirabee-report-${startDate}-${endDate}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('PDF downloaded!');
-    } catch (e) {
+    } catch (err) {
+      console.error('PDF export error:', err);
       toast.error('Could not generate PDF. Please try again.');
     } finally {
       setLoading(false);

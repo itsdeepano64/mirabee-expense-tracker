@@ -1,14 +1,26 @@
 'use client';
 
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Plus, Search, SlidersHorizontal, Calendar, ChevronRight } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Calendar,
+  ChevronRight,
+} from 'lucide-react';
 import { AppShell } from '@/components/shell/app-shell';
 import { ExpenseEditSheet } from '@/components/expenses/expense-edit-sheet';
 import { getExpenses, getCategories } from '@/lib/actions/expenses';
 
-interface Category { id: string; name: string; is_pinned: boolean }
-interface Expense {
+/* ── Types ── */
+interface Category {
+  id: string;
+  name: string;
+  is_pinned: boolean;
+}
+
+interface ExpenseRow {
   id: string;
   description: string;
   amount: number;
@@ -16,100 +28,171 @@ interface Expense {
   is_cogs: boolean;
   notes?: string;
   receipt_url?: string;
-  category: { id: string; name: string } | null;
+  // Supabase may return either key depending on schema version
+  categories?: { id: string; name: string } | null;
+  category?: { id: string; name: string } | null;
 }
 
+/* ── Helpers ── */
 const CAT_ICONS: Record<string, string> = {
-  'Flowers & Plants': '🌸', 'Wholesale Flowers': '🌷', 'Vases': '🏺',
-  'Tape': '🪢', 'Supplies': '📦', 'Rent': '🏠', 'Utilities': '⚡',
-  'Marketing': '📢', 'Payroll': '👥', 'Other': '•',
+  'Flowers & Plants': '🌸',
+  'Wholesale Flowers': '🌷',
+  'Vases': '🏺',
+  'Tape': '🪢',
+  'Supplies': '📦',
+  'Rent': '🏠',
+  'Utilities': '⚡',
+  'Marketing': '📢',
+  'Payroll': '👥',
+  'Other': '•',
 };
+
 const CAT_BG: Record<string, string> = {
-  'Flowers & Plants': 'var(--mb-green-light)', 'Wholesale Flowers': 'var(--mb-green-light)',
-  'Vases': 'var(--mb-blue-xlight)', 'Supplies': 'var(--mb-blue-xlight)',
-  'Tape': 'var(--mb-blue-xlight)', 'Rent': '#F6F0EA', 'Utilities': '#FEF9E7',
-  'Marketing': 'var(--mb-pink-light)', 'Payroll': 'var(--mb-green-light)', 'Other': '#F6F0EA',
+  'Flowers & Plants': 'var(--mb-green-light)',
+  'Wholesale Flowers': 'var(--mb-green-light)',
+  'Supplies': 'var(--mb-blue-xlight)',
+  'Vases': 'var(--mb-blue-xlight)',
+  'Tape': 'var(--mb-blue-xlight)',
+  'Rent': '#F6F0EA',
+  'Utilities': '#FEF9E7',
+  'Marketing': 'var(--mb-pink-light)',
+  'Payroll': 'var(--mb-green-light)',
+  'Other': '#F6F0EA',
 };
+
+function getCatName(exp: ExpenseRow): string | null {
+  return exp.categories?.name ?? exp.category?.name ?? null;
+}
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  return n.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
 }
-function groupByDate(exps: Expense[]): { label: string; items: Expense[] }[] {
-  const map = new Map<string, Expense[]>();
+
+function groupByDate(
+  exps: ExpenseRow[],
+): { label: string; items: ExpenseRow[] }[] {
+  const map = new Map<string, ExpenseRow[]>();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
   for (const e of exps) {
     const d = new Date(e.date);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const yesterday = new Date(today); yesterday.setDate(today.getDate()-1);
-    d.setHours(0,0,0,0);
-    const label = d.getTime() === today.getTime() ? 'Today'
-      : d.getTime() === yesterday.getTime() ? 'Yesterday'
-      : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    d.setHours(0, 0, 0, 0);
+    const label =
+      d.getTime() === today.getTime()
+        ? 'Today'
+        : d.getTime() === yesterday.getTime()
+        ? 'Yesterday'
+        : d.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          });
     if (!map.has(label)) map.set(label, []);
     map.get(label)!.push(e);
   }
-  return Array.from(map.entries()).map(([label, items]) => ({ label, items }));
+  return Array.from(map.entries()).map(([label, items]) => ({
+    label,
+    items,
+  }));
 }
 
+/* ── Page ── */
 export default function ExpensesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const pathname = usePathname();
 
   const [q, setQ] = useState(searchParams.get('q') ?? '');
-  const [activeCats, setActiveCats] = useState<string[]>(
-    searchParams.get('categories')?.split(',').filter(Boolean) ?? []
+  const [activeCatIds, setActiveCatIds] = useState<string[]>(
+    searchParams.get('categories')?.split(',').filter(Boolean) ?? [],
   );
   const [cogsOnly, setCogsOnly] = useState(false);
-  const [startDate, setStartDate] = useState<string>(searchParams.get('start') ?? '');
-  const [endDate, setEndDate] = useState<string>(searchParams.get('end') ?? '');
-  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editId, setEditId] = useState<string | null>(searchParams.get('edit'));
+  const [editId, setEditId] = useState<string | null>(
+    searchParams.get('edit'),
+  );
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  /* load categories once */
+  // Load categories once
   useEffect(() => {
-    getCategories().then(setCategories);
+    getCategories().then(cats => setCategories(cats as Category[]));
   }, []);
 
-  /* load expenses when filters change */
+  // Build the current month date range
+  function getMonthRange() {
+    const now = new Date();
+    return {
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString()
+        .split('T')[0],
+      endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        .toISOString()
+        .split('T')[0],
+    };
+  }
+
   const loadExpenses = useCallback(async () => {
     setLoading(true);
     try {
-      const now = new Date();
+      const { startDate, endDate } = getMonthRange();
+
+      // getExpenses accepts: { startDate?, endDate?, categoryId?, categoryIds?, search? }
+      // No 'limit', no 'q', no 'start'/'end', no 'is_cogs'
       const data = await getExpenses({
-        q: q || undefined,
-        categories: activeCats.length ? activeCats : undefined,
-        start: startDate || new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-        end: endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0],
-        is_cogs: cogsOnly ? true : undefined,
+        search: q || undefined,
+        categoryIds: activeCatIds.length ? activeCatIds : undefined,
+        startDate,
+        endDate,
       });
-      setExpenses(data);
+
+      const rows = data as ExpenseRow[];
+
+      // Filter COGS client-side since is_cogs isn't a valid server param
+      setExpenses(cogsOnly ? rows.filter(e => e.is_cogs) : rows);
+    } catch (err) {
+      console.error('Expenses load error:', err);
     } finally {
       setLoading(false);
     }
-  }, [q, activeCats, startDate, endDate, cogsOnly]);
+  }, [q, activeCatIds, cogsOnly]);
 
   useEffect(() => {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(loadExpenses, q ? 300 : 0);
+    return () => clearTimeout(debounceRef.current);
   }, [loadExpenses, q]);
 
   function toggleCat(id: string) {
-    setActiveCats(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setActiveCatIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
   }
-  function toggleCogsOnly() { setCogsOnly(v => !v); }
 
   const pinned = categories.filter(c => c.is_pinned);
   const grouped = groupByDate(expenses);
-  const editExpense = editId ? expenses.find(e => e.id === editId) : null;
 
   const expensesHeader = (
     <header className="mb-app-header">
-      <span style={{ fontSize: 19, fontWeight: 800, color: 'var(--mb-text)', letterSpacing: '-0.02em' }}>Expenses</span>
+      <span
+        style={{
+          fontSize: 19,
+          fontWeight: 800,
+          color: 'var(--mb-text)',
+          letterSpacing: '-0.02em',
+        }}
+      >
+        Expenses
+      </span>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="mb-hdr-btn" aria-label="Date filter">
+        <button className="mb-hdr-btn" aria-label="Filter by date">
           <Calendar size={17} />
         </button>
         <button className="mb-hdr-btn" aria-label="More filters">
@@ -121,8 +204,14 @@ export default function ExpensesPage() {
 
   return (
     <AppShell header={expensesHeader}>
-      <div style={{ padding: '14px var(--mb-page-x)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-
+      <div
+        style={{
+          padding: '14px var(--mb-page-x)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
         {/* Search */}
         <div className="mb-search">
           <Search size={17} color="var(--mb-text-soft)" />
@@ -134,18 +223,31 @@ export default function ExpensesPage() {
           />
         </div>
 
-        {/* Date + count row */}
+        {/* Date range + count */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <div className="mb-date-pill" style={{ flex: 1 }}>
             <Calendar size={15} color="var(--mb-blue)" />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--mb-text)' }}>
-              {startDate && endDate
-                ? `${startDate} – ${endDate}`
-                : new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })
-              }
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--mb-text)',
+              }}
+            >
+              {new Date().toLocaleString('en-US', {
+                month: 'long',
+                year: 'numeric',
+              })}
             </span>
           </div>
-          <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--mb-text-muted)', whiteSpace: 'nowrap' }}>
+          <span
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: 'var(--mb-text-muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
             {expenses.length} items
           </span>
         </div>
@@ -153,15 +255,18 @@ export default function ExpensesPage() {
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
           <button
-            className={`mb-chip ${activeCats.length === 0 && !cogsOnly ? 'mb-chip-active' : ''}`}
-            onClick={() => { setActiveCats([]); setCogsOnly(false); }}
+            className={`mb-chip ${activeCatIds.length === 0 && !cogsOnly ? 'mb-chip-active' : ''}`}
+            onClick={() => {
+              setActiveCatIds([]);
+              setCogsOnly(false);
+            }}
           >
             All
           </button>
           {pinned.map(cat => (
             <button
               key={cat.id}
-              className={`mb-chip ${activeCats.includes(cat.id) ? 'mb-chip-active' : ''}`}
+              className={`mb-chip ${activeCatIds.includes(cat.id) ? 'mb-chip-active' : ''}`}
               onClick={() => toggleCat(cat.id)}
             >
               {CAT_ICONS[cat.name] ?? '•'} {cat.name}
@@ -169,7 +274,7 @@ export default function ExpensesPage() {
           ))}
           <button
             className={`mb-chip ${cogsOnly ? 'mb-chip-green' : ''}`}
-            onClick={toggleCogsOnly}
+            onClick={() => setCogsOnly(v => !v)}
           >
             🌱 COGS only
           </button>
@@ -180,16 +285,46 @@ export default function ExpensesPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[1, 2].map(g => (
               <div key={g}>
-                <div className="mb-skeleton" style={{ height: 14, width: 100, marginBottom: 8, borderRadius: 6 }} />
+                <div
+                  className="mb-skeleton"
+                  style={{
+                    height: 13,
+                    width: 110,
+                    marginBottom: 8,
+                    borderRadius: 6,
+                  }}
+                />
                 <div className="mb-card" style={{ overflow: 'hidden' }}>
                   {[1, 2].map(i => (
-                    <div key={i} style={{ padding: '12px 14px', borderTop: i > 1 ? '1px solid var(--mb-border)' : 'none', display: 'flex', gap: 12, alignItems: 'center' }}>
-                      <div className="mb-skeleton" style={{ width: 40, height: 40, borderRadius: 13 }} />
+                    <div
+                      key={i}
+                      style={{
+                        padding: '12px 14px',
+                        borderTop:
+                          i > 1 ? '1px solid var(--mb-border)' : 'none',
+                        display: 'flex',
+                        gap: 12,
+                        alignItems: 'center',
+                      }}
+                    >
+                      <div
+                        className="mb-skeleton"
+                        style={{ width: 40, height: 40, borderRadius: 13 }}
+                      />
                       <div style={{ flex: 1 }}>
-                        <div className="mb-skeleton" style={{ height: 13, width: '60%', marginBottom: 6 }} />
-                        <div className="mb-skeleton" style={{ height: 11, width: '35%' }} />
+                        <div
+                          className="mb-skeleton"
+                          style={{ height: 13, width: '60%', marginBottom: 6 }}
+                        />
+                        <div
+                          className="mb-skeleton"
+                          style={{ height: 11, width: '35%' }}
+                        />
                       </div>
-                      <div className="mb-skeleton" style={{ height: 14, width: 50 }} />
+                      <div
+                        className="mb-skeleton"
+                        style={{ height: 14, width: 50 }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -197,9 +332,24 @@ export default function ExpensesPage() {
             ))}
           </div>
         ) : grouped.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--mb-text-muted)' }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '48px 0',
+              color: 'var(--mb-text-muted)',
+            }}
+          >
             <div style={{ fontSize: 36, marginBottom: 12 }}>🌻</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--mb-text)', marginBottom: 6 }}>No expenses found</div>
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--mb-text)',
+                marginBottom: 6,
+              }}
+            >
+              No expenses found
+            </div>
             <div style={{ fontSize: 13 }}>
               {q ? 'Try a different search.' : 'Tap + to log your first expense.'}
             </div>
@@ -207,42 +357,95 @@ export default function ExpensesPage() {
         ) : (
           grouped.map(({ label, items }) => (
             <div key={label}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mb-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8, paddingLeft: 2 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'var(--mb-text-muted)',
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  marginBottom: 8,
+                  paddingLeft: 2,
+                }}
+              >
                 {label}
               </div>
               <div className="mb-card" style={{ overflow: 'hidden' }}>
                 {items.map((exp, i) => {
-                  const icon = CAT_ICONS[exp.category?.name ?? ''] ?? '•';
-                  const bg = CAT_BG[exp.category?.name ?? ''] ?? '#F6F0EA';
+                  const name = getCatName(exp);
+                  const icon = CAT_ICONS[name ?? ''] ?? '•';
+                  const bg = CAT_BG[name ?? ''] ?? '#F6F0EA';
                   return (
                     <div
                       key={exp.id}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
                         padding: '12px 14px',
-                        borderTop: i > 0 ? '1px solid var(--mb-border)' : 'none',
+                        borderTop:
+                          i > 0 ? '1px solid var(--mb-border)' : 'none',
                         cursor: 'pointer',
                       }}
                       onClick={() => setEditId(exp.id)}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={e => e.key === 'Enter' && setEditId(exp.id)}
+                      onKeyDown={e =>
+                        e.key === 'Enter' && setEditId(exp.id)
+                      }
                     >
-                      <div className="mb-exp-icon" style={{ background: bg }}>
+                      <div
+                        className="mb-exp-icon"
+                        style={{ background: bg }}
+                      >
                         <span style={{ fontSize: 19 }}>{icon}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--mb-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div
+                          style={{
+                            fontSize: 13.5,
+                            fontWeight: 600,
+                            color: 'var(--mb-text)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
                           {exp.description}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--mb-text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
-                          {exp.category?.name ?? 'Uncategorized'}
-                          {exp.is_cogs && <span className="mb-badge-cogs">COGS</span>}
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--mb-text-muted)',
+                            marginTop: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          {name ?? 'Uncategorized'}
+                          {exp.is_cogs && (
+                            <span className="mb-badge-cogs">COGS</span>
+                          )}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--mb-text)' }}>{fmt(exp.amount)}</div>
-                        <ChevronRight size={14} color="var(--mb-text-soft)" style={{ marginTop: 2 }} />
+                      <div
+                        style={{ textAlign: 'right', flexShrink: 0 }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: 'var(--mb-text)',
+                          }}
+                        >
+                          {fmt(exp.amount)}
+                        </div>
+                        <ChevronRight
+                          size={14}
+                          color="var(--mb-text-soft)"
+                          style={{ marginTop: 2 }}
+                        />
                       </div>
                     </div>
                   );
@@ -258,7 +461,12 @@ export default function ExpensesPage() {
         className="mb-fab"
         aria-label="Add expense"
         onClick={() => router.push('/expenses/new')}
-        style={{ position: 'fixed', bottom: 'calc(72px + env(safe-area-inset-bottom) + 12px)', right: 20, zIndex: 45 }}
+        style={{
+          position: 'fixed',
+          bottom: 'calc(72px + env(safe-area-inset-bottom) + 12px)',
+          right: 20,
+          zIndex: 45,
+        }}
       >
         <Plus size={26} color="#fff" strokeWidth={2.5} />
       </button>
@@ -266,10 +474,18 @@ export default function ExpensesPage() {
       {/* Edit sheet */}
       {editId && (
         <ExpenseEditSheet
-          expense={expenses.find(e => e.id === editId) ?? null}
+          expense={
+            (expenses.find(e => e.id === editId) as ExpenseRow) ?? null
+          }
           onClose={() => setEditId(null)}
-          onSaved={() => { setEditId(null); loadExpenses(); }}
-          onDeleted={() => { setEditId(null); loadExpenses(); }}
+          onSaved={() => {
+            setEditId(null);
+            loadExpenses();
+          }}
+          onDeleted={() => {
+            setEditId(null);
+            loadExpenses();
+          }}
         />
       )}
     </AppShell>
