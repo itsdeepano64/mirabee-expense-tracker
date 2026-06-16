@@ -1,10 +1,13 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
+// Bump this when replacing public/mirabee-logo.png to bust CDN/browser cache
+const LOGO_VERSION = "2";
+
 const sizes = {
-  sm: { width: 80, height: 32, className: "h-8 w-auto" },
-  md: { width: 120, height: 48, className: "h-12 w-auto" },
-  lg: { width: 180, height: 72, className: "h-[72px] w-auto" },
+  sm: { className: "h-10 w-auto max-w-[140px]" },
+  md: { className: "h-14 w-auto max-w-[180px]" },
+  lg: { className: "h-24 w-auto max-w-[260px]" },
 } as const;
 
 type MirabeeLogoProps = {
@@ -18,16 +21,17 @@ export function MirabeeLogo({
   className,
   priority = false,
 }: MirabeeLogoProps) {
-  const { width, height, className: sizeClass } = sizes[size];
+  const { className: sizeClass } = sizes[size];
 
   return (
     <Image
-      src="/mirabee-logo.png"
+      src={`/mirabee-logo.png?v=${LOGO_VERSION}`}
       alt="Mirabee Flowers"
-      width={width}
-      height={height}
+      width={512}
+      height={512}
       className={cn(sizeClass, className)}
       priority={priority}
+      unoptimized
     />
   );
 }

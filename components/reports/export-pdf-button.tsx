@@ -29,7 +29,7 @@ export function ExportPdfButton({
   async function handleExport() {
     setGenerating(true);
     try {
-      const logoUrl = `${window.location.origin}/mirabee-logo.png`;
+      const logoUrl = `${window.location.origin}/mirabee-logo.png?v=2`;
       const blob = await pdf(
         <ExpenseReportDocument
           expenses={expenses}
