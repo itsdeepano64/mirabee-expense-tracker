@@ -20,42 +20,24 @@ export function ExportPdfButton({ startDate, endDate, className }: Props) {
     }
     setLoading(true);
     try {
-      // Dynamic imports keep bundle size small
-      const [{ pdf }, { getExpenses }, { getCategoryBreakdown }, { ExpenseReportDocument }] =
+      const [{ pdf }, { getExpenses, getCategoryBreakdown }, { ExpenseReportDocument }] =
         await Promise.all([
           import('@react-pdf/renderer'),
-          import('@/lib/actions/expenses'),
           import('@/lib/actions/expenses'),
           import('@/lib/pdf/expense-report-document'),
         ]);
 
-      // getExpenses signature: { startDate?, endDate?, categoryId?, categoryIds?, search? }
       const [expenses, breakdown] = await Promise.all([
         getExpenses({ startDate, endDate }),
-        getCategoryBreakdown({ startDate, endDate }),
+        // getCategoryBreakdown takes two positional args
+        getCategoryBreakdown(startDate, endDate),
       ]);
 
-      const expArr = expenses as Array<{
-        amount: number;
-        is_cogs: boolean;
-        [key: string]: unknown;
-      }>;
-
-      const totalSpent = expArr.reduce((s, e) => s + e.amount, 0);
-      const cogsTotal = expArr
-        .filter(e => e.is_cogs)
-        .reduce((s, e) => s + e.amount, 0);
+      const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+      const cogsTotal  = expenses.filter(e => e.is_cogs).reduce((s, e) => s + e.amount, 0);
 
       const blob = await pdf(
-        // @ts-expect-error — JSX element in .ts file; suppress if tsconfig strict
-        ExpenseReportDocument({
-          expenses: expArr,
-          breakdown,
-          totalSpent,
-          cogsTotal,
-          startDate,
-          endDate,
-        }),
+        ExpenseReportDocument({ expenses, breakdown, totalSpent, cogsTotal, startDate, endDate })
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
