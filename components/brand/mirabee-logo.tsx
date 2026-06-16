@@ -75,7 +75,7 @@ export function MirabeeLogo({
               textAlign: direction === 'column' ? 'center' : 'left',
             }}
           >
-            mirabee flowers
+            Mirabee Flowers
           </span>
           {(size === 'md' || size === 'sm') && (
             <span

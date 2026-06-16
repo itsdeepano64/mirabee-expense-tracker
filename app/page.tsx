@@ -111,7 +111,7 @@ export default function LandingPage() {
             margin: 0,
           }}
         >
-          mirabee flowers
+          Mirabee Flowers
         </h1>
         <p
           style={{
