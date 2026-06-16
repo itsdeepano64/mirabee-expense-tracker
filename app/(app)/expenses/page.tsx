@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -50,6 +51,14 @@ function groupByDate(exps: ExpenseWithCategory[]): { label: string; items: Expen
 
 /* ── Page ── */
 export default function ExpensesPage() {
+  return (
+    <Suspense fallback={null}>
+      <ExpensesPageContent />
+    </Suspense>
+  );
+}
+
+function ExpensesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
