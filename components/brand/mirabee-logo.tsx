@@ -1,8 +1,7 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-// Bump this when replacing public/mirabee-logo.png to bust CDN/browser cache
-const LOGO_VERSION = "2";
+const LOGO_SRC = "/mirabee-flowers-logo.png";
 
 const sizes = {
   sm: { className: "h-10 w-auto max-w-[140px]" },
@@ -25,7 +24,7 @@ export function MirabeeLogo({
 
   return (
     <Image
-      src={`/mirabee-logo.png?v=${LOGO_VERSION}`}
+      src={LOGO_SRC}
       alt="Mirabee Flowers"
       width={512}
       height={512}

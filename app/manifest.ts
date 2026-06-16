@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#6BA8BA",
     icons: [
       {
-        src: "/mirabee-logo.png",
+        src: "/mirabee-flowers-logo.png",
         sizes: "512x512",
         type: "image/png",
       },

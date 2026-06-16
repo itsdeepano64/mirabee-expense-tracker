@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/mirabee-logo.png",
+        source: "/mirabee-flowers-logo.png",
         headers: [
           {
             key: "Cache-Control",
