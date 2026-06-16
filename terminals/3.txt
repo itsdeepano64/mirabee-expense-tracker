@@ -1,0 +1,23 @@
+---
+pid: 24476
+cwd: "C:\Users\Deepa\mirabee-expense-tracker"
+command: "Set-Location C:\\Users\\Deepa\\mirabee-expense-tracker; git add components/brand/mirabee-logo.tsx components/reports/export-pdf-button.tsx next.config.ts; git commit -m \"Fix logo caching and sizing for Vercel deploys\"; npx vercel --prod --yes"
+started_at: 2026-06-16T19:16:25.333Z
+running_for_ms: 15007    
+---
+warning: in the working copy of 'components/brand/mirabee-logo.tsx', LF will be replaced by CRLF the next time Git touches it
+[master 656224a] Fix logo caching and sizing for Vercel deploys
+ 3 files changed, 25 insertions(+), 8 deletions(-)
+warning: in the working copy of 'components/reports/export-pdf-button.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'next.config.ts', LF will be replaced by CRLF the next time Git touches it
+Vercel CLI 54.14.0 (Node.js 24.14.1)
+Retrieving project…
+Deploying deependoesitalls-projects/mirabee-expense-tracker
+Uploading [--------------------] (0.0B/616KB)
+Uploading [=====---------------] (164.2KB/616KB)
+Uploading [==========----------] (308.2KB/616KB)
+Uploading [===============-----] (468.2KB/616KB)
+Uploading [====================] (616.0KB/616KB)
+https://mirabee-expense-tracker-iyi3x3ywl-deependoesitalls-projects.vercel.app  Inspect     https://vercel.com/deependoesitalls-projects/mirabee-expense-tracker/3521rDYbA2nAL84M7NfGNKeHNLtw
+▲ Production  https://mirabee-expense-tracker-iyi3x3ywl-deependoesitalls-projects.vercel.app
+Building…
