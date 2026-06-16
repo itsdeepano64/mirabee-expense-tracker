@@ -29,7 +29,6 @@ export function ExportPdfButton({ startDate, endDate, className }: Props) {
 
       const [expenses, breakdown] = await Promise.all([
         getExpenses({ startDate, endDate }),
-        // getCategoryBreakdown takes two positional args
         getCategoryBreakdown(startDate, endDate),
       ]);
 
@@ -37,7 +36,7 @@ export function ExportPdfButton({ startDate, endDate, className }: Props) {
       const cogsTotal  = expenses.filter(e => e.is_cogs).reduce((s, e) => s + e.amount, 0);
 
       const blob = await pdf(
-        ExpenseReportDocument({ expenses, breakdown, totalSpent, cogsTotal, startDate, endDate })
+        ExpenseReportDocument({ expenses, breakdown, total: totalSpent, cogsTotal, startDate, endDate, logoUrl: '/logo.png' })
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
