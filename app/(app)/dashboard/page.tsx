@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, TrendingUp, Leaf, Tag, Bell, Settings } from 'lucide-react';
+import { Plus, TrendingUp, Leaf, Tag, Bell, Settings, ChevronRight } from 'lucide-react';
 import { AppShell } from '@/components/shell/app-shell';
 import { MirabeeLogo } from '@/components/brand/mirabee-logo';
 import { getDashboardStats } from '@/lib/actions/expenses';
@@ -132,6 +132,7 @@ export default function DashboardPage() {
             iconColor="var(--mb-green)"
             value={fmt(stats?.cogsTotal ?? 0)}
             label="Inventory (COGS)"
+            sub={stats && stats.total > 0 ? `${Math.round((stats.cogsTotal / stats.total) * 100)}% of total` : undefined}
             loading={loading}
           />
           <StatCard
@@ -140,8 +141,33 @@ export default function DashboardPage() {
             iconColor="var(--mb-pink)"
             value={stats?.topCategory?.name ?? '—'}
             label="Top category"
+            sub={stats?.topCategory ? fmt(stats.topCategory.total) : undefined}
             loading={loading}
           />
+        </div>
+
+        {/* Quick actions */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+          {[
+            { label: 'Add expense', emoji: '➕', href: '/expenses/new', bg: 'var(--mb-pink-light)', border: '#F0C0CC', color: '#993556' },
+            { label: 'View all',    emoji: '📋', href: '/expenses',     bg: 'var(--mb-blue-xlight)', border: 'var(--mb-blue-light)', color: 'var(--mb-blue-dark)' },
+            { label: 'Reports',     emoji: '📊', href: '/reports',      bg: 'var(--mb-green-light)', border: '#C5E0C2', color: 'var(--mb-green-dark)' },
+          ].map(({ label, emoji, href, bg, border, color }) => (
+            <Link
+              key={href}
+              href={href}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 6, padding: '13px 8px',
+                background: bg, border: `1.5px solid ${border}`,
+                borderRadius: 'var(--mb-r-md)',
+                textDecoration: 'none',
+              }}
+            >
+              <span style={{ fontSize: 22 }}>{emoji}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+            </Link>
+          ))}
         </div>
 
         {/* Recent expenses — comes directly from getDashboardStats().recent */}
@@ -222,23 +248,26 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ icon, iconBg, iconColor, value, label, loading }: {
+function StatCard({ icon, iconBg, iconColor, value, label, sub, loading }: {
   icon: React.ReactNode; iconBg: string; iconColor: string;
-  value: string; label: string; loading?: boolean;
+  value: string; label: string; sub?: string; loading?: boolean;
 }) {
   return (
-    <div className="mb-card" style={{ padding: '13px 14px' }}>
-      <div style={{ width: 32, height: 32, borderRadius: 10, background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 9 }}>
+    <div className="mb-card" style={{ padding: '14px 14px 13px' }}>
+      <div style={{ width: 34, height: 34, borderRadius: 11, background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
         {icon}
       </div>
       {loading ? (
         <div className="mb-skeleton" style={{ height: 22, width: '70%', marginBottom: 5 }} />
       ) : (
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--mb-text)', letterSpacing: '-0.02em', lineHeight: 1 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--mb-text)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 4 }}>
           {value}
         </div>
       )}
-      <div style={{ fontSize: 10.5, color: 'var(--mb-text-muted)', fontWeight: 500, marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--mb-text-muted)', fontWeight: 600 }}>{label}</div>
+      {sub && !loading && (
+        <div style={{ fontSize: 10.5, color: 'var(--mb-text-soft)', fontWeight: 500, marginTop: 2 }}>{sub}</div>
+      )}
     </div>
   );
 }

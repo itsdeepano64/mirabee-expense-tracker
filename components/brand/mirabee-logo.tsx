@@ -86,7 +86,7 @@ export function MirabeeLogo({
                 textAlign: direction === 'column' ? 'center' : 'left',
               }}
             >
-              expense tracker
+              Expense Tracker
             </span>
           )}
         </div>
