@@ -1,36 +1,96 @@
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+'use client';
 
-const LOGO_SRC = "/mirabee-flowers-logo.png";
+import Image from 'next/image';
+
+interface MirabeeLogoProps {
+  /** Size variant */
+  size?: 'sm' | 'md' | 'lg' | 'hero';
+  /** Show the text wordmark beside/below the image */
+  showWordmark?: boolean;
+  /** Layout direction when wordmark is shown */
+  direction?: 'row' | 'column';
+  className?: string;
+}
 
 const sizes = {
-  sm: { className: "h-10 w-auto max-w-[140px]" },
-  md: { className: "h-14 w-auto max-w-[180px]" },
-  lg: { className: "h-24 w-auto max-w-[260px]" },
-} as const;
-
-type MirabeeLogoProps = {
-  size?: keyof typeof sizes;
-  className?: string;
-  priority?: boolean;
+  sm:   { img: 28, wordmark: 13 },
+  md:   { img: 36, wordmark: 14 },
+  lg:   { img: 52, wordmark: 16 },
+  hero: { img: 90, wordmark: 22 },
 };
 
 export function MirabeeLogo({
-  size = "md",
-  className,
-  priority = false,
+  size = 'md',
+  showWordmark = true,
+  direction = 'row',
+  className = '',
 }: MirabeeLogoProps) {
-  const { className: sizeClass } = sizes[size];
+  const { img, wordmark } = sizes[size];
+  const isRow = direction === 'row';
 
   return (
-    <Image
-      src={LOGO_SRC}
-      alt="Mirabee Flowers"
-      width={512}
-      height={512}
-      className={cn(sizeClass, className)}
-      priority={priority}
-      unoptimized
-    />
+    <div
+      className={className}
+      style={{
+        display: 'flex',
+        flexDirection: isRow ? 'row' : 'column',
+        alignItems: 'center',
+        gap: isRow ? 9 : 8,
+      }}
+    >
+      {/* Logo image — white-background version looks best in app context */}
+      <div
+        style={{
+          width: img,
+          height: img,
+          borderRadius: size === 'hero' ? 24 : size === 'lg' ? 18 : 10,
+          overflow: 'hidden',
+          flexShrink: 0,
+          border: size === 'hero'
+            ? '2px solid #D8EEF4'
+            : '1px solid #EDE4DB',
+          background: '#fff',
+        }}
+      >
+        <Image
+          src="/mirabee-flowers-logo.png"
+          alt="Mirabee Flowers logo"
+          width={img}
+          height={img}
+          style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+          unoptimized
+          priority={size === 'hero'}
+        />
+      </div>
+
+      {showWordmark && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <span
+            style={{
+              fontSize: wordmark,
+              fontWeight: 800,
+              color: 'var(--mb-text)',
+              letterSpacing: '-0.02em',
+              lineHeight: 1,
+              textAlign: direction === 'column' ? 'center' : 'left',
+            }}
+          >
+            mirabee flowers
+          </span>
+          {(size === 'md' || size === 'sm') && (
+            <span
+              style={{
+                fontSize: 10,
+                color: 'var(--mb-text-muted)',
+                fontWeight: 500,
+                textAlign: direction === 'column' ? 'center' : 'left',
+              }}
+            >
+              expense tracker
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

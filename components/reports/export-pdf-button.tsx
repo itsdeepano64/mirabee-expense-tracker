@@ -1,67 +1,69 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { pdf } from "@react-pdf/renderer";
-import { FileText } from "lucide-react";
-import type { CategoryBreakdown, ExpenseWithCategory } from "@/lib/types";
-import { ExpenseReportDocument } from "@/lib/pdf/expense-report-document";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { FileText } from 'lucide-react';
+import { toast } from 'sonner';
+import { pdf } from '@react-pdf/renderer';
+import { ExpenseReportDocument } from '@/lib/pdf/expense-report-document';
+import { getExpenses, getCategoryBreakdown } from '@/lib/actions/expenses';
 
-type ExportPdfButtonProps = {
-  expenses: ExpenseWithCategory[];
-  breakdown: CategoryBreakdown[];
-  startDate: string;
-  endDate: string;
-  total: number;
-  cogsTotal: number;
-};
+interface Props {
+  start: string;
+  end: string;
+  className?: string;
+}
 
-export function ExportPdfButton({
-  expenses,
-  breakdown,
-  startDate,
-  endDate,
-  total,
-  cogsTotal,
-}: ExportPdfButtonProps) {
-  const [generating, setGenerating] = useState(false);
+export function ExportPdfButton({ start, end, className }: Props) {
+  const [loading, setLoading] = useState(false);
 
   async function handleExport() {
-    setGenerating(true);
+    if (!start || !end) {
+      toast.error('Please select a date range first.');
+      return;
+    }
+    setLoading(true);
     try {
-      const logoUrl = `${window.location.origin}/mirabee-flowers-logo.png`;
+      const [expenses, breakdown] = await Promise.all([
+        getExpenses({ start, end, limit: 9999 }),
+        getCategoryBreakdown({ start, end }),
+      ]);
+      const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
+      const cogsTotal = expenses.filter(e => e.is_cogs).reduce((s, e) => s + e.amount, 0);
+
       const blob = await pdf(
         <ExpenseReportDocument
           expenses={expenses}
           breakdown={breakdown}
-          startDate={startDate}
-          endDate={endDate}
-          total={total}
+          totalSpent={totalSpent}
           cogsTotal={cogsTotal}
-          logoUrl={logoUrl}
+          startDate={start}
+          endDate={end}
         />
       ).toBlob();
 
       const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `mirabee-report-${startDate}-to-${endDate}.pdf`;
-      link.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mirabee-report-${start}-${end}.pdf`;
+      a.click();
       URL.revokeObjectURL(url);
+      toast.success('PDF downloaded!');
+    } catch (e) {
+      toast.error('Could not generate PDF. Please try again.');
     } finally {
-      setGenerating(false);
+      setLoading(false);
     }
   }
 
   return (
-    <Button
-      type="button"
-      className="w-full sm:w-auto"
+    <button
       onClick={handleExport}
-      disabled={expenses.length === 0 || generating}
+      disabled={loading}
+      className={className ?? 'mb-export-pdf'}
+      style={{ opacity: loading ? 0.7 : 1 }}
     >
-      <FileText className="h-4 w-4" />
-      {generating ? "Generating..." : "Export PDF"}
-    </Button>
+      <FileText size={16} />
+      {loading ? 'Generating…' : 'PDF report'}
+    </button>
   );
 }

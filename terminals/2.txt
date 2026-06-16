@@ -3,7 +3,7 @@ pid: 23328
 cwd: "C:\Users\Deepa\mirabee-expense-tracker"
 command: "Set-Location C:\\Users\\Deepa\\mirabee-expense-tracker; npx vercel login"
 started_at: 2026-06-16T19:10:25.010Z
-running_for_ms: 165000   
+running_for_ms: 1475014  
 ---
 Vercel CLI 54.14.0 (Node.js 24.14.1)
 > 

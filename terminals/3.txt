@@ -3,7 +3,7 @@ pid: 24476
 cwd: "C:\Users\Deepa\mirabee-expense-tracker"
 command: "Set-Location C:\\Users\\Deepa\\mirabee-expense-tracker; git add components/brand/mirabee-logo.tsx components/reports/export-pdf-button.tsx next.config.ts; git commit -m \"Fix logo caching and sizing for Vercel deploys\"; npx vercel --prod --yes"
 started_at: 2026-06-16T19:16:25.333Z
-running_for_ms: 15007    
+running_for_ms: 815007   
 ---
 warning: in the working copy of 'components/brand/mirabee-logo.tsx', LF will be replaced by CRLF the next time Git touches it
 [master 656224a] Fix logo caching and sizing for Vercel deploys
