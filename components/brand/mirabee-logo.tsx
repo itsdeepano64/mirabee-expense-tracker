@@ -47,8 +47,8 @@ export function MirabeeLogo({
           overflow: 'hidden',
           flexShrink: 0,
           border: size === 'hero'
-            ? '2px solid #D8EEF4'
-            : '1px solid #EDE4DB',
+            ? '2px solid var(--mb-blue-light)'
+            : '1px solid var(--mb-border)',
           background: '#fff',
         }}
       >

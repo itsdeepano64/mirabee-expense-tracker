@@ -1,61 +1,6 @@
 @import "tailwindcss";
 @import "react-day-picker/style.css";
 
-/* ════════════════════════════════════════════
-   PASTEL THEMES  –  applied via data-theme=""
-   on <html>. Default (no attribute) = Warm Cream.
-   ════════════════════════════════════════════ */
-
-/* ── Lavender Dream ── */
-[data-theme="lavender"] {
-  --mb-blue:        #9B89C4;
-  --mb-blue-dark:   #7A68A3;
-  --mb-blue-light:  #DDD6F0;
-  --mb-blue-xlight: #F0ECFB;
-  --mb-bg:          #F9F7FD;
-  --mb-shadow-blue: 0 4px 16px rgba(155, 137, 196, 0.30);
-}
-
-/* ── Rose Garden ── */
-[data-theme="rose"] {
-  --mb-blue:        #D4849A;
-  --mb-blue-dark:   #BA6B82;
-  --mb-blue-light:  #F5D7DF;
-  --mb-blue-xlight: #FDF0F3;
-  --mb-bg:          #FEF8F9;
-  --mb-shadow-blue: 0 4px 16px rgba(212, 132, 154, 0.30);
-}
-
-/* ── Sage Garden ── */
-[data-theme="sage"] {
-  --mb-blue:        #7FA882;
-  --mb-blue-dark:   #5E8A62;
-  --mb-blue-light:  #D0E4D2;
-  --mb-blue-xlight: #EDF5EE;
-  --mb-bg:          #F5FAF5;
-  --mb-shadow-blue: 0 4px 16px rgba(127, 168, 130, 0.30);
-}
-
-/* ── Peach Blossom ── */
-[data-theme="peach"] {
-  --mb-blue:        #E8956A;
-  --mb-blue-dark:   #CB7548;
-  --mb-blue-light:  #FAE0D0;
-  --mb-blue-xlight: #FDF4EF;
-  --mb-bg:          #FEF8F4;
-  --mb-shadow-blue: 0 4px 16px rgba(232, 149, 106, 0.30);
-}
-
-/* ── Sky Blue (default stays Warm Cream) ── */
-[data-theme="sky"] {
-  --mb-blue:        #5B9EC9;
-  --mb-blue-dark:   #3A7DAF;
-  --mb-blue-light:  #C8E2F4;
-  --mb-blue-xlight: #EAF4FB;
-  --mb-bg:          #F4F9FD;
-  --mb-shadow-blue: 0 4px 16px rgba(91, 158, 201, 0.30);
-}
-
 :root {
   /* ── Tailwind / shadcn tokens ── */
   --background: #fdf8f3;
@@ -126,6 +71,56 @@
   --color-sage-dark: var(--sage-dark);
   --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
+}
+
+/* ════════════════════════════════════════════
+   PASTEL THEMES — must be AFTER :root so they win
+   on equal specificity. Applied via data-theme on <html>.
+   ════════════════════════════════════════════ */
+
+[data-theme="lavender"] {
+  --mb-blue:        #9B89C4;
+  --mb-blue-dark:   #7A68A3;
+  --mb-blue-light:  #DDD6F0;
+  --mb-blue-xlight: #F0ECFB;
+  --mb-bg:          #F9F7FD;
+  --mb-shadow-blue: 0 4px 16px rgba(155, 137, 196, 0.30);
+}
+
+[data-theme="rose"] {
+  --mb-blue:        #D4849A;
+  --mb-blue-dark:   #BA6B82;
+  --mb-blue-light:  #F5D7DF;
+  --mb-blue-xlight: #FDF0F3;
+  --mb-bg:          #FEF8F9;
+  --mb-shadow-blue: 0 4px 16px rgba(212, 132, 154, 0.30);
+}
+
+[data-theme="sage"] {
+  --mb-blue:        #7FA882;
+  --mb-blue-dark:   #5E8A62;
+  --mb-blue-light:  #D0E4D2;
+  --mb-blue-xlight: #EDF5EE;
+  --mb-bg:          #F5FAF5;
+  --mb-shadow-blue: 0 4px 16px rgba(127, 168, 130, 0.30);
+}
+
+[data-theme="peach"] {
+  --mb-blue:        #E8956A;
+  --mb-blue-dark:   #CB7548;
+  --mb-blue-light:  #FAE0D0;
+  --mb-blue-xlight: #FDF4EF;
+  --mb-bg:          #FEF8F4;
+  --mb-shadow-blue: 0 4px 16px rgba(232, 149, 106, 0.30);
+}
+
+[data-theme="sky"] {
+  --mb-blue:        #5B9EC9;
+  --mb-blue-dark:   #3A7DAF;
+  --mb-blue-light:  #C8E2F4;
+  --mb-blue-xlight: #EAF4FB;
+  --mb-bg:          #F4F9FD;
+  --mb-shadow-blue: 0 4px 16px rgba(91, 158, 201, 0.30);
 }
 
 /* ── Reset & base ── */
