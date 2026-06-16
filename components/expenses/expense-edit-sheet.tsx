@@ -23,12 +23,19 @@ function fmt(n: number) {
 
 interface Props {
   expense: ExpenseWithCategory | null;
-  onClose: () => void;
-  onSaved: () => void;
-  onDeleted: () => void;
+  onClose?: () => void;
+  onSaved?: () => void;
+  onDeleted?: () => void;
+  // These props are accepted for backwards-compatibility with existing callers
+  // (e.g. components/dashboard/recent-expenses.tsx) but are not used —
+  // categories are fetched internally, and open/onOpenChange are handled via
+  // rendering this component conditionally.
+  categories?: Category[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props) {
+export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted, onOpenChange }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCatId, setSelectedCatId] = useState('');
   const [isCogs, setIsCogs] = useState(false);
@@ -36,25 +43,27 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
-    getCategories().then(cats => {
-      setCategories(cats);
-    });
+    getCategories().then(cats => setCategories(cats));
   }, []);
 
   useEffect(() => {
     if (expense) {
       setSelectedCatId(expense.category_id);
       setIsCogs(expense.is_cogs);
+      setConfirming(false);
     }
   }, [expense]);
 
   if (!expense) return null;
 
+  function handleClose() {
+    onClose?.();
+    onOpenChange?.(false);
+  }
+
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-
-    // Build native FormData — exactly what updateExpense(id, FormData) expects
     const fd = new FormData(form);
     fd.set('category_id', selectedCatId);
     fd.set('is_cogs', String(isCogs));
@@ -66,7 +75,8 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
         toast.error(result.error);
       } else {
         toast.success('Expense updated');
-        onSaved();
+        onSaved?.();
+        onOpenChange?.(false);
       }
     } catch {
       toast.error('Could not update expense.');
@@ -76,10 +86,7 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
   }
 
   async function handleDelete() {
-    if (!confirming) {
-      setConfirming(true);
-      return;
-    }
+    if (!confirming) { setConfirming(true); return; }
     setSaving(true);
     try {
       const result = await deleteExpense(expense!.id);
@@ -88,7 +95,8 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
         setSaving(false);
       } else {
         toast.success('Expense deleted');
-        onDeleted();
+        onDeleted?.();
+        onOpenChange?.(false);
       }
     } catch {
       toast.error('Could not delete expense.');
@@ -99,7 +107,7 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
   return (
     <div
       className="mb-sheet-overlay"
-      onClick={e => e.target === e.currentTarget && onClose()}
+      onClick={e => e.target === e.currentTarget && handleClose()}
       role="dialog"
       aria-modal="true"
       aria-label={`Edit: ${expense.description}`}
@@ -117,7 +125,7 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
               {fmt(expense.amount)} · {new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </div>
           </div>
-          <button onClick={onClose} className="mb-hdr-btn" aria-label="Close">
+          <button onClick={handleClose} className="mb-hdr-btn" aria-label="Close">
             <X size={17} />
           </button>
         </div>
@@ -142,11 +150,7 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
           {/* Description */}
           <div>
             <div style={labelStyle}>Description</div>
-            <input
-              name="description"
-              className="mb-field"
-              defaultValue={expense.description}
-            />
+            <input name="description" className="mb-field" defaultValue={expense.description} />
           </div>
 
           {/* Category chips */}
@@ -182,18 +186,16 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
           </div>
 
           {/* Notes */}
-          {(expense.notes !== null && expense.notes !== undefined) || true ? (
-            <div>
-              <div style={labelStyle}>Notes (optional)</div>
-              <textarea
-                name="notes"
-                className="mb-field"
-                defaultValue={expense.notes ?? ''}
-                rows={2}
-                style={{ resize: 'none', lineHeight: 1.5 }}
-              />
-            </div>
-          ) : null}
+          <div>
+            <div style={labelStyle}>Notes (optional)</div>
+            <textarea
+              name="notes"
+              className="mb-field"
+              defaultValue={expense.notes ?? ''}
+              rows={2}
+              style={{ resize: 'none', lineHeight: 1.5 }}
+            />
+          </div>
 
           {/* COGS toggle */}
           <div style={{ background: 'var(--mb-bg)', border: '1.5px solid var(--mb-border)', borderRadius: 'var(--mb-r-md)', padding: '11px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -213,12 +215,7 @@ export function ExpenseEditSheet({ expense, onClose, onSaved, onDeleted }: Props
             {saving ? 'Saving…' : 'Save changes'}
           </button>
 
-          <button
-            type="button"
-            className="mb-btn-delete"
-            onClick={handleDelete}
-            disabled={saving}
-          >
+          <button type="button" className="mb-btn-delete" onClick={handleDelete} disabled={saving}>
             <Trash2 size={16} />
             {confirming ? 'Tap again to confirm delete' : 'Delete expense'}
           </button>
