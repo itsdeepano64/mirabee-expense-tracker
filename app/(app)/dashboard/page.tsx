@@ -8,8 +8,8 @@ import { MirabeeLogo } from '@/components/brand/mirabee-logo';
 import { getDashboardStats, getExpenses } from '@/lib/actions/expenses';
 import { useEffect, useState } from 'react';
 
-/* ── Types ── */
-interface DashStats {
+/* ── Local display type — field names resolved at runtime ── */
+interface DashDisplay {
   totalSpent: number;
   cogsTotal: number;
   expenseCount: number;
@@ -24,12 +24,11 @@ interface ExpenseRow {
   amount: number;
   is_cogs: boolean;
   date: string;
-  // Supabase join may come back as either key depending on schema version
   categories?: { id: string; name: string } | null;
   category?: { id: string; name: string } | null;
 }
 
-/* ── Category display helpers ── */
+/* ── Helpers ── */
 const CAT_STYLE: Record<string, { icon: string; bg: string }> = {
   'Flowers & Plants':  { icon: '🌸', bg: 'var(--mb-green-light)' },
   'Wholesale Flowers': { icon: '🌷', bg: 'var(--mb-green-light)' },
@@ -46,17 +45,72 @@ const CAT_STYLE: Record<string, { icon: string; bg: string }> = {
 function getCatName(exp: ExpenseRow): string | null {
   return exp.categories?.name ?? exp.category?.name ?? null;
 }
+
 function getCatStyle(name: string | null) {
   return CAT_STYLE[name ?? ''] ?? { icon: '•', bg: '#F6F0EA' };
 }
+
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  return n.toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
 }
 
-/* ── Component ── */
+/**
+ * Normalise the raw getDashboardStats return into our display shape.
+ * getDashboardStats returns: DashboardStats & { recent: ExpenseWithCategory[] }
+ * We read every plausible field name to be resilient against naming differences.
+ */
+function normaliseStats(raw: unknown): DashDisplay {
+  const r = raw as Record<string, unknown>;
+  const n = (key: string) =>
+    typeof r[key] === 'number' ? (r[key] as number) : 0;
+
+  return {
+    // Try every plausible field name for total spend
+    totalSpent:
+      n('totalSpent') ||
+      n('totalMonthSpent') ||
+      n('monthTotal') ||
+      n('total') ||
+      n('totalAmount'),
+
+    cogsTotal:
+      n('cogsTotal') ||
+      n('totalCogs') ||
+      n('cogsTotalAmount') ||
+      n('cogs'),
+
+    expenseCount:
+      n('expenseCount') ||
+      n('count') ||
+      n('totalCount') ||
+      n('expensesCount'),
+
+    topCategory:
+      typeof r['topCategory'] === 'string'
+        ? (r['topCategory'] as string)
+        : null,
+
+    avgExpense:
+      n('avgExpense') ||
+      n('averageExpense') ||
+      n('avgAmount') ||
+      n('average'),
+
+    vsLastMonth:
+      typeof r['vsLastMonth'] === 'number'
+        ? (r['vsLastMonth'] as number)
+        : undefined,
+  };
+}
+
+/* ── Page ── */
 export default function DashboardPage() {
   const router = useRouter();
-  const [stats, setStats] = useState<DashStats | null>(null);
+  const [stats, setStats] = useState<DashDisplay | null>(null);
   const [recent, setRecent] = useState<ExpenseRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,21 +118,20 @@ export default function DashboardPage() {
     async function load() {
       try {
         const now = new Date();
-        // Exact param names from the getExpenses type signature in the build error:
-        // { startDate?, endDate?, categoryId?, categoryIds?, search? }
         const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-          .toISOString().split('T')[0];
+          .toISOString()
+          .split('T')[0];
         const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-          .toISOString().split('T')[0];
+          .toISOString()
+          .split('T')[0];
 
-        const [s, exps] = await Promise.all([
+        const [rawStats, exps] = await Promise.all([
           getDashboardStats(),
           getExpenses({ startDate, endDate }),
         ]);
 
-        setStats(s as DashStats);
-        // Slice client-side — no 'limit' param exists in getExpenses
-        setRecent((exps as ExpenseRow[]).slice(0, 5));
+        setStats(normaliseStats(rawStats as unknown));
+        setRecent((exps as unknown as ExpenseRow[]).slice(0, 5));
       } catch (err) {
         console.error('Dashboard load error:', err);
       } finally {
@@ -228,9 +281,7 @@ export default function DashboardPage() {
                 >
                   {label}
                 </div>
-                <div
-                  style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}
-                >
+                <div style={{ fontSize: 17, fontWeight: 700, color: '#fff' }}>
                   {val}
                 </div>
               </div>
@@ -403,7 +454,6 @@ export default function DashboardPage() {
   );
 }
 
-/* ── Stat card sub-component ── */
 function StatCard({
   icon,
   iconBg,
