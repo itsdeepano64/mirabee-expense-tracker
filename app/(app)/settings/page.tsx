@@ -9,15 +9,32 @@ import { getCategories, createCategory } from '@/lib/actions/expenses';
 import type { Category } from '@/lib/types';
 
 /* ── Theme definitions ── */
-const THEMES = [
-  { key: 'default',  label: 'Warm Cream',      swatch: ['#6BA8BA', '#FDF8F3', '#E07A8C'] },
-  { key: 'lavender', label: 'Lavender Dream',   swatch: ['#9B89C4', '#F9F7FD', '#E07A8C'] },
-  { key: 'rose',     label: 'Rose Garden',      swatch: ['#D4849A', '#FEF8F9', '#8FAE8B'] },
-  { key: 'sage',     label: 'Sage Garden',      swatch: ['#7FA882', '#F5FAF5', '#D4849A'] },
-  { key: 'peach',    label: 'Peach Blossom',    swatch: ['#E8956A', '#FEF8F4', '#8FAE8B'] },
-  { key: 'sky',      label: 'Sky Blue',         swatch: ['#5B9EC9', '#F4F9FD', '#E07A8C'] },
+const LIGHT_THEMES = [
+  { key: 'default',  label: 'Warm Cream',    swatch: ['#6BA8BA', '#FDF8F3', '#E07A8C'] },
+  { key: 'lavender', label: 'Lavender Dream', swatch: ['#9B89C4', '#F9F7FD', '#E07A8C'] },
+  { key: 'rose',     label: 'Rose Garden',   swatch: ['#D4849A', '#FEF8F9', '#8FAE8B'] },
+  { key: 'sage',     label: 'Sage Garden',   swatch: ['#7FA882', '#F5FAF5', '#D4849A'] },
+  { key: 'peach',    label: 'Peach Blossom', swatch: ['#E8956A', '#FEF8F4', '#8FAE8B'] },
+  { key: 'sky',      label: 'Sky Blue',      swatch: ['#5B9EC9', '#F4F9FD', '#E07A8C'] },
 ] as const;
-type ThemeKey = typeof THEMES[number]['key'];
+
+const DARK_THEMES = [
+  { key: 'midnight-rose',  label: 'Midnight Rose',   swatch: ['#E8859A', '#1A1218', '#5CC878'] },
+  { key: 'dark-forest',    label: 'Dark Forest',     swatch: ['#5CC87C', '#101814', '#E07A8C'] },
+  { key: 'velvet-plum',    label: 'Velvet Plum',     swatch: ['#B888D8', '#130E1C', '#E07A8C'] },
+  { key: 'slate-ocean',    label: 'Slate Ocean',     swatch: ['#4AAEE0', '#0C1620', '#8FAE8B'] },
+  { key: 'charcoal-peach', label: 'Charcoal Peach',  swatch: ['#ECA070', '#1A1410', '#8FAE8B'] },
+  { key: 'obsidian-gold',  label: 'Obsidian Gold',   swatch: ['#D4A840', '#111108', '#8FAE8B'] },
+  { key: 'deep-navy',      label: 'Deep Navy',       swatch: ['#6EA0F0', '#0A1020', '#E07A8C'] },
+  { key: 'mocha',          label: 'Mocha',           swatch: ['#D49060', '#181208', '#8FAE8B'] },
+  { key: 'dark-lavender',  label: 'Dark Lavender',   swatch: ['#A882E0', '#100C1C', '#E07A8C'] },
+  { key: 'noir-blush',     label: 'Noir Blush',      swatch: ['#D890A8', '#120C10', '#8FAE8B'] },
+  { key: 'dark-sage',      label: 'Dark Sage',       swatch: ['#70C488', '#0C1410', '#E07A8C'] },
+  { key: 'twilight',       label: 'Twilight',        swatch: ['#8C88E8', '#0C0E1E', '#E07A8C'] },
+] as const;
+
+const ALL_THEMES = [...LIGHT_THEMES, ...DARK_THEMES];
+type ThemeKey = typeof ALL_THEMES[number]['key'];
 
 const CAT_ICONS: Record<string, string> = {
   'Flowers & Plants': '🌸', 'Wholesale Flowers': '🌷', 'Vases': '🏺',
@@ -49,10 +66,11 @@ export default function SettingsPage() {
     getCategories().then(setCategories).finally(() => setLoadingCats(false));
     const saved = localStorage.getItem('mirabee-theme') as ThemeKey | null;
     if (saved) setTheme(saved);
+    else setTheme('default');
   }, []);
 
-  function applyTheme(key: ThemeKey) {
-    setTheme(key);
+  function applyTheme(key: string) {
+    setTheme(key as ThemeKey);
     localStorage.setItem('mirabee-theme', key);
     if (key === 'default') {
       document.documentElement.removeAttribute('data-theme');
@@ -120,47 +138,25 @@ export default function SettingsPage() {
         {/* ── Appearance ── */}
         <div>
           <div style={sectionLabel}>Appearance</div>
+
+          {/* Light themes */}
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mb-text-soft)', marginBottom: 8, paddingLeft: 2, letterSpacing: '0.03em' }}>
+            ☀️ Light
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+            {LIGHT_THEMES.map(({ key, label, swatch }) => (
+              <ThemeButton key={key} themeKey={key} label={label} swatch={swatch} active={theme === key} onSelect={applyTheme} dark={false} />
+            ))}
+          </div>
+
+          {/* Dark themes */}
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--mb-text-soft)', marginBottom: 8, paddingLeft: 2, letterSpacing: '0.03em' }}>
+            🌙 Dark
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {THEMES.map(({ key, label, swatch }) => {
-              const active = theme === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => applyTheme(key)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '11px 13px',
-                    borderRadius: 'var(--mb-r-md)',
-                    border: `1.5px solid ${active ? 'var(--mb-blue)' : 'var(--mb-border)'}`,
-                    background: active ? 'var(--mb-blue-xlight)' : 'var(--mb-card)',
-                    cursor: 'pointer',
-                    boxShadow: active ? 'none' : 'var(--mb-shadow-sm)',
-                    textAlign: 'left',
-                  }}
-                >
-                  {/* Swatch circles */}
-                  <div style={{ display: 'flex', gap: -4, position: 'relative', flexShrink: 0 }}>
-                    {swatch.map((color, i) => (
-                      <div key={i} style={{
-                        width: 14, height: 14, borderRadius: '50%',
-                        background: color,
-                        border: '1.5px solid rgba(255,255,255,0.8)',
-                        marginLeft: i > 0 ? -5 : 0,
-                        position: 'relative', zIndex: swatch.length - i,
-                      }} />
-                    ))}
-                  </div>
-                  <span style={{
-                    flex: 1, fontSize: 12, fontWeight: active ? 700 : 600,
-                    color: active ? 'var(--mb-blue-dark)' : 'var(--mb-text)',
-                    lineHeight: 1.2,
-                  }}>
-                    {label}
-                  </span>
-                  {active && <Check size={13} color="var(--mb-blue)" style={{ flexShrink: 0 }} />}
-                </button>
-              );
-            })}
+            {DARK_THEMES.map(({ key, label, swatch }) => (
+              <ThemeButton key={key} themeKey={key} label={label} swatch={swatch} active={theme === key} onSelect={applyTheme} dark={true} />
+            ))}
           </div>
         </div>
 
@@ -298,5 +294,59 @@ export default function SettingsPage() {
 
       </div>
     </AppShell>
+  );
+}
+
+/* ── Reusable theme picker button ── */
+function ThemeButton({
+  themeKey, label, swatch, active, onSelect, dark,
+}: {
+  themeKey: string;
+  label: string;
+  swatch: readonly string[];
+  active: boolean;
+  onSelect: (k: string) => void; // eslint-disable-line
+  dark: boolean;
+}) {
+  const cardBg   = dark ? swatch[1] : (active ? 'var(--mb-blue-xlight)' : 'var(--mb-card)');
+  const border   = active ? 'var(--mb-blue)' : (dark ? 'transparent' : 'var(--mb-border)');
+  const textColor = dark ? '#E8E0F0' : (active ? 'var(--mb-blue-dark)' : 'var(--mb-text)');
+
+  return (
+    <button
+      onClick={() => onSelect(themeKey)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 9,
+        padding: '10px 12px',
+        borderRadius: 'var(--mb-r-md)',
+        border: `1.5px solid ${border}`,
+        background: cardBg,
+        cursor: 'pointer',
+        boxShadow: active ? `0 0 0 2px var(--mb-blue)` : 'var(--mb-shadow-sm)',
+        textAlign: 'left',
+        outline: 'none',
+      }}
+    >
+      {/* Swatch dots */}
+      <div style={{ display: 'flex', flexShrink: 0 }}>
+        {swatch.map((color, i) => (
+          <div key={i} style={{
+            width: 13, height: 13, borderRadius: '50%',
+            background: color,
+            border: '1.5px solid rgba(255,255,255,0.6)',
+            marginLeft: i > 0 ? -4 : 0,
+            position: 'relative', zIndex: swatch.length - i,
+          }} />
+        ))}
+      </div>
+      <span style={{ flex: 1, fontSize: 11.5, fontWeight: active ? 700 : 600, color: textColor, lineHeight: 1.2 }}>
+        {label}
+      </span>
+      {active && (
+        <div style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--mb-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Check size={10} color="#fff" strokeWidth={3} />
+        </div>
+      )}
+    </button>
   );
 }
