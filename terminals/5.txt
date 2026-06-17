@@ -3,7 +3,7 @@ pid: 16884
 cwd: "C:\Users\Deepa\mirabee-expense-tracker"
 command: "npm run dev"
 started_at: 2026-06-16T23:25:08.536Z
-running_for_ms: 17540007 
+running_for_ms: 20955000 
 ---
 At line:1 char:48
 + (cd "C:\\Users\\Deepa\\mirabee-expense-tracker" ; npm run dev)
