@@ -227,7 +227,12 @@ export async function createCategory(data: {
     .select()
     .single();
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "A category with that name already exists" };
+    }
+    return { error: error.message };
+  }
 
   revalidateAll();
   return { success: true, category: { ...category, is_pinned: category.is_pinned ?? true } };

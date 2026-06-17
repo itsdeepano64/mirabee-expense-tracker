@@ -78,6 +78,7 @@ function ToggleRow({
 function CategoryForm({
   form,
   saving,
+  error,
   onNameChange,
   onCogsChange,
   onPinnedChange,
@@ -88,6 +89,7 @@ function CategoryForm({
 }: {
   form: CategoryFormState;
   saving: boolean;
+  error?: string | null;
   onNameChange: (name: string) => void;
   onCogsChange: () => void;
   onPinnedChange: () => void;
@@ -98,6 +100,23 @@ function CategoryForm({
 }) {
   return (
     <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {error && (
+        <p
+          style={{
+            margin: 0,
+            padding: '10px 12px',
+            borderRadius: 10,
+            background: 'var(--mb-pink-light)',
+            border: '1px solid #F0C0CC',
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: '#993556',
+            lineHeight: 1.45,
+          }}
+        >
+          {error}
+        </p>
+      )}
       <input
         autoFocus
         value={form.name}
@@ -207,9 +226,19 @@ export function CategoryManager() {
   const [deleteExpenseCount, setDeleteExpenseCount] = useState(0);
   const [renameValue, setRenameValue] = useState('');
   const [deleteMode, setDeleteMode] = useState<'confirm' | 'rename'>('confirm');
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function refreshCategories() {
-    setCategories(await getCategories());
+    try {
+      setLoadError(null);
+      setCategories(await getCategories());
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not load categories';
+      setLoadError(message);
+      toast.error(message);
+    }
   }
 
   useEffect(() => {
@@ -219,6 +248,7 @@ export function CategoryManager() {
   async function handleAdd() {
     if (!addForm.name.trim()) return;
     setSaving(true);
+    setFormError(null);
     try {
       const result = await createCategory({
         name: addForm.name.trim(),
@@ -226,12 +256,18 @@ export function CategoryManager() {
         is_pinned: addForm.is_pinned,
       });
       if (result.error) {
+        setFormError(result.error);
         toast.error(result.error);
         return;
       }
       await refreshCategories();
       toast.success(`"${addForm.name.trim()}" added`);
       setAddForm(emptyForm());
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not save category';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -239,6 +275,7 @@ export function CategoryManager() {
 
   function startEdit(cat: Category) {
     setShowAdd(false);
+    setFormError(null);
     setEditingId(cat.id);
     setEditForm({
       name: cat.name,
@@ -255,6 +292,7 @@ export function CategoryManager() {
   async function handleSaveEdit() {
     if (!editingId || !editForm.name.trim()) return;
     setSaving(true);
+    setFormError(null);
     try {
       const result = await updateCategory(editingId, {
         name: editForm.name.trim(),
@@ -262,12 +300,18 @@ export function CategoryManager() {
         is_pinned: editForm.is_pinned,
       });
       if (result.error) {
+        setFormError(result.error);
         toast.error(result.error);
         return;
       }
       await refreshCategories();
       toast.success('Category updated');
       cancelEdit();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not update category';
+      setFormError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -358,6 +402,37 @@ export function CategoryManager() {
       </div>
 
       <div className="mb-card" style={{ overflow: 'hidden' }}>
+        {loadError && !loading && (
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--mb-border)' }}>
+            <p
+              style={{
+                margin: '0 0 10px',
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: '#993556',
+                lineHeight: 1.45,
+              }}
+            >
+              {loadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => refreshCategories()}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1.5px solid var(--mb-border)',
+                background: 'var(--mb-bg)',
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'var(--mb-blue)',
+                cursor: 'pointer',
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
         {loading ? (
           <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[1, 2, 3].map((i) => (
@@ -385,6 +460,7 @@ export function CategoryManager() {
                 <CategoryForm
                   form={editForm}
                   saving={saving}
+                  error={formError}
                   onNameChange={(name) => setEditForm((f) => ({ ...f, name }))}
                   onCogsChange={() => setEditForm((f) => ({ ...f, is_cogs_default: !f.is_cogs_default }))}
                   onPinnedChange={() => setEditForm((f) => ({ ...f, is_pinned: !f.is_pinned }))}
@@ -473,6 +549,7 @@ export function CategoryManager() {
             type="button"
             onClick={() => {
               cancelEdit();
+              setFormError(null);
               setShowAdd(true);
               setAddForm(emptyForm());
             }}
@@ -513,7 +590,11 @@ export function CategoryManager() {
             <CategoryForm
               form={addForm}
               saving={saving}
-              onNameChange={(name) => setAddForm((f) => ({ ...f, name }))}
+              error={formError}
+              onNameChange={(name) => {
+                setFormError(null);
+                setAddForm((f) => ({ ...f, name }));
+              }}
               onCogsChange={() => setAddForm((f) => ({ ...f, is_cogs_default: !f.is_cogs_default }))}
               onPinnedChange={() => setAddForm((f) => ({ ...f, is_pinned: !f.is_pinned }))}
               onCancel={() => {
