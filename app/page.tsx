@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Receipt, Leaf, PieChart, Search } from 'lucide-react';
+import { hasEntrySession, setEntrySession } from '@/lib/client/session';
 
 const FEATURES = [
   { icon: Receipt, bg: 'var(--mb-blue-xlight)',  color: 'var(--mb-blue)',        title: 'Log expenses', sub: 'Fast entry with receipt photos' },
@@ -18,8 +19,7 @@ export default function RootPage() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const entry = localStorage.getItem('mirabee-entry');
-    if (entry) {
+    if (hasEntrySession()) {
       router.replace('/dashboard');
     } else {
       setChecking(false);
@@ -27,7 +27,7 @@ export default function RootPage() {
   }, [router]);
 
   function handleEnter() {
-    localStorage.setItem('mirabee-entry', 'jenni');
+    setEntrySession();
     router.push('/dashboard');
   }
 

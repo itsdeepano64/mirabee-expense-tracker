@@ -3,9 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { AppShell } from '@/components/shell/app-shell';
 import { MirabeeLogo } from '@/components/brand/mirabee-logo';
 import { CategoryManager } from '@/components/settings/category-manager';
+import { setAppTheme, getAppTheme } from '@/lib/actions/settings';
+import { clearEntrySession } from '@/lib/client/session';
+import {
+  applyThemeToDocument,
+  cacheThemeLocally,
+  getCachedTheme,
+  type ThemeKey,
+} from '@/lib/theme';
 
 /* ── Theme definitions ── */
 const LIGHT_THEMES = [
@@ -33,7 +42,6 @@ const DARK_THEMES = [
 ] as const;
 
 const ALL_THEMES = [...LIGHT_THEMES, ...DARK_THEMES];
-type ThemeKey = typeof ALL_THEMES[number]['key'];
 
 const sectionLabel: React.CSSProperties = {
   fontSize: 11,
@@ -50,23 +58,35 @@ export default function SettingsPage() {
   const [theme, setTheme] = useState<ThemeKey>('default');
 
   useEffect(() => {
-    const saved = localStorage.getItem('mirabee-theme') as ThemeKey | null;
-    if (saved) setTheme(saved);
-    else setTheme('default');
+    const cached = getCachedTheme() as ThemeKey | null;
+    if (cached) {
+      setTheme(cached);
+      return;
+    }
+
+    getAppTheme()
+      .then((saved) => {
+        setTheme(saved);
+        applyThemeToDocument(saved);
+        cacheThemeLocally(saved);
+      })
+      .catch(() => setTheme('default'));
   }, []);
 
-  function applyTheme(key: string) {
-    setTheme(key as ThemeKey);
-    localStorage.setItem('mirabee-theme', key);
-    if (key === 'default') {
-      document.documentElement.removeAttribute('data-theme');
-    } else {
-      document.documentElement.setAttribute('data-theme', key);
+  async function applyTheme(key: string) {
+    const themeKey = key as ThemeKey;
+    setTheme(themeKey);
+    applyThemeToDocument(themeKey);
+    cacheThemeLocally(themeKey);
+
+    const result = await setAppTheme(themeKey);
+    if (result.error) {
+      toast.error(result.error);
     }
   }
 
   function handleSignOut() {
-    if (typeof window !== 'undefined') localStorage.removeItem('mirabee-entry');
+    clearEntrySession();
     router.replace('/');
   }
 

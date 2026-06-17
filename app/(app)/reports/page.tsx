@@ -5,6 +5,7 @@ import { FileText, FileSpreadsheet, LogOut, TrendingUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/shell/app-shell';
 import { getCategoryBreakdown, getExpenses } from '@/lib/actions/expenses';
+import { clearEntrySession } from '@/lib/client/session';
 import { ExportPdfButton } from '@/components/reports/export-pdf-button';
 import type { CategoryBreakdown } from '@/lib/types';
 
@@ -95,9 +96,7 @@ export default function ReportsPage() {
     : 'This Quarter';
 
   function handleSignOut() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mirabee-entry');
-    }
+    clearEntrySession();
     router.replace('/');
   }
 
