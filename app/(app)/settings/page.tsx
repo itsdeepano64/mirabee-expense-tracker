@@ -18,12 +18,12 @@ import {
 
 /* ── Theme definitions ── */
 const LIGHT_THEMES = [
-  { key: 'default',  label: 'Warm Cream',    swatch: ['#6BA8BA', '#FDF8F3', '#E07A8C'] },
-  { key: 'lavender', label: 'Lavender Dream', swatch: ['#9B89C4', '#F9F7FD', '#E07A8C'] },
-  { key: 'rose',     label: 'Rose Garden',   swatch: ['#D4849A', '#FEF8F9', '#8FAE8B'] },
-  { key: 'sage',     label: 'Sage Garden',   swatch: ['#7FA882', '#F5FAF5', '#D4849A'] },
-  { key: 'peach',    label: 'Peach Blossom', swatch: ['#E8956A', '#FEF8F4', '#8FAE8B'] },
-  { key: 'sky',      label: 'Sky Blue',      swatch: ['#5B9EC9', '#F4F9FD', '#E07A8C'] },
+  { key: 'default',  label: 'Warm Cream',     swatch: ['#4AACC4', '#FFF5EC', '#E8567A'] },
+  { key: 'lavender', label: 'Lavender Dream', swatch: ['#7C62D8', '#F0EAFC', '#E06088'] },
+  { key: 'rose',     label: 'Rose Garden',    swatch: ['#E05078', '#FDEEF4', '#48A870'] },
+  { key: 'sage',     label: 'Sage Garden',    swatch: ['#48A860', '#E8F8EA', '#D86080'] },
+  { key: 'peach',    label: 'Peach Blossom',  swatch: ['#F07840', '#FFF0E4', '#58A878'] },
+  { key: 'sky',      label: 'Sky Blue',       swatch: ['#3898D8', '#E4F4FC', '#E86888'] },
 ] as const;
 
 const DARK_THEMES = [

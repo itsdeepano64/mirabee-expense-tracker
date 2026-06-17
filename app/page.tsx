@@ -10,7 +10,7 @@ const FEATURES = [
   { icon: Receipt, bg: 'var(--mb-blue-xlight)',  color: 'var(--mb-blue)',        title: 'Log expenses', sub: 'Fast entry with receipt photos' },
   { icon: Leaf,    bg: 'var(--mb-green-light)',   color: 'var(--mb-green)',       title: 'Track COGS',   sub: 'Inventory & cost of goods'      },
   { icon: PieChart,bg: 'var(--mb-pink-light)',    color: 'var(--mb-pink)',        title: 'Reports',      sub: 'PDF & CSV export'               },
-  { icon: Search,  bg: '#F6F0EA',                 color: 'var(--mb-text-muted)', title: 'Filter & search', sub: 'Find any expense fast'       },
+  { icon: Search,  bg: 'var(--mb-border)',         color: 'var(--mb-text-muted)', title: 'Filter & search', sub: 'Find any expense fast'       },
 ];
 
 export default function RootPage() {

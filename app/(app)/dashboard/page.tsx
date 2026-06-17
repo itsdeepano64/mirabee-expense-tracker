@@ -27,15 +27,15 @@ const CAT_STYLE: Record<string, { icon: string; bg: string }> = {
   'Supplies':          { icon: '📦', bg: 'var(--mb-blue-xlight)' },
   'Vases':             { icon: '🏺', bg: 'var(--mb-blue-xlight)' },
   'Tape':              { icon: '🪢', bg: 'var(--mb-blue-xlight)' },
-  'Rent':              { icon: '🏠', bg: '#F6F0EA' },
-  'Utilities':         { icon: '⚡', bg: '#FEF9E7' },
+  'Rent':              { icon: '🏠', bg: 'var(--mb-border)' },
+  'Utilities':         { icon: '⚡', bg: 'var(--mb-blue-xlight)' },
   'Marketing':         { icon: '📢', bg: 'var(--mb-pink-light)' },
   'Payroll':           { icon: '👥', bg: 'var(--mb-green-light)' },
-  'Other':             { icon: '•',  bg: '#F6F0EA' },
+  'Other':             { icon: '•',  bg: 'var(--mb-border)' },
 };
 
 function getCatStyle(name: string | undefined | null) {
-  return CAT_STYLE[name ?? ''] ?? { icon: '•', bg: '#F6F0EA' };
+  return CAT_STYLE[name ?? ''] ?? { icon: '•', bg: 'var(--mb-border)' };
 }
 
 function fmt(n: number) {
@@ -144,23 +144,13 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
           {[
-            { label: 'Add expense', emoji: '➕', href: '/expenses/new', bg: 'var(--mb-pink-light)', border: '#F0C0CC', color: '#993556' },
-            { label: 'View all',    emoji: '📋', href: '/expenses',     bg: 'var(--mb-blue-xlight)', border: 'var(--mb-blue-light)', color: 'var(--mb-blue-dark)' },
-            { label: 'Reports',     emoji: '📊', href: '/reports',      bg: 'var(--mb-green-light)', border: '#C5E0C2', color: 'var(--mb-green-dark)' },
-          ].map(({ label, emoji, href, bg, border, color }) => (
-            <Link
-              key={href}
-              href={href}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 6, padding: '13px 8px',
-                background: bg, border: `1.5px solid ${border}`,
-                borderRadius: 'var(--mb-r-md)',
-                textDecoration: 'none',
-              }}
-            >
-              <span style={{ fontSize: 22 }}>{emoji}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color, textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+            { label: 'Add expense', emoji: '➕', href: '/expenses/new', className: 'mb-quick-action mb-quick-action--add' },
+            { label: 'View all',    emoji: '📋', href: '/expenses',     className: 'mb-quick-action' },
+            { label: 'Reports',     emoji: '📊', href: '/reports',      className: 'mb-quick-action mb-quick-action--reports' },
+          ].map(({ label, emoji, href, className }) => (
+            <Link key={href} href={href} className={className}>
+              <span className="mb-quick-action-emoji">{emoji}</span>
+              <span className="mb-quick-action-label">{label}</span>
             </Link>
           ))}
         </div>
