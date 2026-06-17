@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Receipt, PieChart, Settings } from 'lucide-react';
+import { Home, Receipt, PieChart, Settings, FileText } from 'lucide-react';
 import { MirabeeLogo } from '@/components/brand/mirabee-logo';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home',     Icon: Home     },
   { href: '/expenses',  label: 'Expenses', Icon: Receipt  },
+  { href: '/invoices',  label: 'Invoices', Icon: FileText },
   { href: '/reports',   label: 'Reports',  Icon: PieChart },
   { href: '/settings',  label: 'Settings', Icon: Settings },
 ];

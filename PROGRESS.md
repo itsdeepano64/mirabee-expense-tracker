@@ -163,6 +163,7 @@ Dark themes override ALL `--mb-*` variables including backgrounds, text, borders
 | `/expenses/new` | `app/(app)/expenses/new/page.tsx` | ✅ Done | Fast entry form |
 | `/reports` | `app/(app)/reports/page.tsx` | ✅ Done | Gradient hero card, COGS split bar, category breakdown, sign-out |
 | `/settings` | `app/(app)/settings/page.tsx` | ✅ Done | Shop card, 18-theme picker, categories list, add category, sign-out |
+| `/invoices` | `app/(app)/invoices/page.tsx` | ✅ Done | Invoice builder — customer info, line items, tax, PDF download |
 
 All `(app)` routes wrapped by `app/(app)/layout.tsx` (EntryGate + AppShell).
 
@@ -185,17 +186,20 @@ app/
 
 components/
   brand/mirabee-logo.tsx            # Logo image + wordmark
-  shell/app-shell.tsx               # Sticky header + bottom nav + scrollable body
+  shell/app-shell.tsx               # Sticky header + bottom nav (5 items: Home, Expenses, Invoices, Reports, Settings)
   expenses/expense-form.tsx
   expenses/expense-edit-sheet.tsx
   expenses/expense-search-bar.tsx
   expenses/quick-filter-chips.tsx
+  expenses/receipt-upload.tsx       # Action sheet: Take Photo vs Choose from Library/Files
+  invoices/invoice-download-button.tsx  # PDFDownloadLink wrapper (dynamically imported, no SSR)
   reports/export-pdf-button.tsx
 
 lib/
   actions/expenses.ts               # All Supabase server actions
   types.ts
   pdf/expense-report-document.tsx
+  pdf/invoice-document.tsx          # InvoiceDocument + InvoiceData type
 
 public/
   mirabee-flowers-logo.png          # ACTIVE LOGO — do not rename
@@ -261,6 +265,9 @@ Run `supabase/schema.sql` first, then `supabase/migration-v2.sql` (adds `is_pinn
 - [ ] Month-over-month comparison on Dashboard
 - [ ] Loading skeletons on Reports/Settings
 - [ ] iPad layout polish
+- [ ] Invoice: "From Expenses" tab — select existing expenses to auto-populate line items
+- [ ] Invoice: save invoices to Supabase (history/status tracking)
+- [ ] Invoice: email delivery via Resend
 
 ---
 
