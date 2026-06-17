@@ -1,9 +1,15 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import type { SavedInvoice } from "@/components/invoices/invoice-history";
+
+const DownloadButton = dynamic(
+  () => import("@/components/invoices/invoice-download-button").then((m) => m.InvoiceDownloadButton),
+  { ssr: false, loading: () => <div style={{ height: 50 }} /> }
+);
 
 function fmt(n: number) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
@@ -156,6 +162,17 @@ export function InvoicePreview({ invoice, onClose }: Props) {
             </div>
           )}
 
+        </div>
+
+        {/* Sticky download footer */}
+        <div style={{
+          flexShrink: 0, padding: "12px 18px 20px",
+          borderTop: "1px solid #EDE4DB", background: "#fff",
+        }}>
+          <DownloadButton
+            data={{ ...d, logoUrl: typeof window !== "undefined" ? `${window.location.origin}/mirabee-flowers-logo.png` : "/mirabee-flowers-logo.png" }}
+            onDownload={() => {}}
+          />
         </div>
       </div>
     </div>
