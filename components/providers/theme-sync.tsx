@@ -13,31 +13,31 @@ import {
 export function ThemeSync() {
   useEffect(() => {
     async function syncTheme() {
-      try {
-        const remote = await getAppTheme();
-        const cached = getCachedTheme();
+      const cached = getCachedTheme();
+      const { theme: remote, error } = await getAppTheme();
 
-        if (remote !== 'default') {
-          if (cached !== remote) {
-            applyThemeToDocument(remote);
-            cacheThemeLocally(remote);
-          }
-          return;
-        }
-
-        if (cached && isThemeKey(cached) && cached !== 'default') {
-          applyThemeToDocument(cached);
-          await setAppTheme(cached);
-          return;
-        }
-
-        applyThemeToDocument('default');
-      } catch {
-        const cached = getCachedTheme();
+      if (error) {
         if (cached && isThemeKey(cached)) {
           applyThemeToDocument(cached);
         }
+        return;
       }
+
+      if (remote !== 'default') {
+        if (cached !== remote) {
+          applyThemeToDocument(remote);
+          cacheThemeLocally(remote);
+        }
+        return;
+      }
+
+      if (cached && isThemeKey(cached) && cached !== 'default') {
+        applyThemeToDocument(cached);
+        const result = await setAppTheme(cached);
+        if (!result.error) return;
+      }
+
+      applyThemeToDocument('default');
     }
 
     syncTheme();

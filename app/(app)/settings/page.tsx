@@ -65,10 +65,14 @@ export default function SettingsPage() {
     }
 
     getAppTheme()
-      .then((saved) => {
+      .then(({ theme: saved, error }) => {
         setTheme(saved);
-        applyThemeToDocument(saved);
-        cacheThemeLocally(saved);
+        if (!error) {
+          applyThemeToDocument(saved);
+          cacheThemeLocally(saved);
+        } else if (cached) {
+          applyThemeToDocument(cached);
+        }
       })
       .catch(() => setTheme('default'));
   }, []);
@@ -81,7 +85,7 @@ export default function SettingsPage() {
 
     const result = await setAppTheme(themeKey);
     if (result.error) {
-      toast.error(result.error);
+      toast.warning(result.error);
     }
   }
 
