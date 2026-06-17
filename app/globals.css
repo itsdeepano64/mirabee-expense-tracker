@@ -1058,6 +1058,18 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes mb-spin {
+  to { transform: rotate(360deg); }
+}
+.mb-spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid var(--mb-border-strong);
+  border-top-color: var(--mb-blue);
+  animation: mb-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
 .mb-animate-in {
   animation: mb-fade-up 0.25s ease both;
 }

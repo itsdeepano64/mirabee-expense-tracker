@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.blue,
   },
-  logo: { width: 130, height: 44, objectFit: "contain" },
-  headerRight: { alignItems: "flex-end" },
-  invoiceTitle: { fontSize: 28, fontWeight: "bold", color: C.blue, letterSpacing: 1 },
+  logo: { width: 110, height: 110, objectFit: "contain" },
+  headerRight: { alignItems: "flex-end", justifyContent: "flex-end" },
+  invoiceTitle: { fontSize: 32, fontWeight: "bold", color: C.blue, letterSpacing: 2 },
   invoiceNum:   { fontSize: 11, color: C.muted, marginTop: 4 },
   invoiceDate:  { fontSize: 10, color: C.muted, marginTop: 2 },
   dueDate:      { fontSize: 10, fontWeight: "bold", color: C.text, marginTop: 2 },
@@ -205,13 +205,6 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
   const taxAmount = data.taxRate ? subtotal * (data.taxRate / 100) : 0;
   const total = subtotal + taxAmount;
 
-  const statusColors: Record<string, { bg: string; text: string }> = {
-    draft: { bg: C.sand,    text: C.muted  },
-    sent:  { bg: "#D4ECFF", text: "#2B7EB0" },
-    paid:  { bg: "#D6F0D3", text: "#3A7A34" },
-  };
-  const statusStyle = data.status ? statusColors[data.status] : null;
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -220,13 +213,6 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
         <View style={styles.header}>
           <Image src={data.logoUrl} style={styles.logo} />
           <View style={styles.headerRight}>
-            {statusStyle && (
-              <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                <Text style={[styles.statusText, { color: statusStyle.text }]}>
-                  {data.status?.toUpperCase()}
-                </Text>
-              </View>
-            )}
             <Text style={styles.invoiceTitle}>INVOICE</Text>
             <Text style={styles.invoiceNum}>#{data.invoiceNumber}</Text>
             <Text style={styles.invoiceDate}>
