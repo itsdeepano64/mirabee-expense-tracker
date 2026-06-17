@@ -1,0 +1,18 @@
+---
+pid: 23768
+cwd: "C:\Users\Deepa\mirabee-expense-tracker"
+command: "npm run dev"
+started_at: 2026-06-16T23:24:49.765Z
+running_for_ms: 17560000 
+---
+At line:1 char:48
++ (cd "C:\\Users\\Deepa\\mirabee-expense-tracker" ; npm run dev)
++                                                ~
+Missing closing ')' in expression.
+At line:1 char:62
++ (cd "C:\\Users\\Deepa\\mirabee-expense-tracker" ; npm run dev)
++                                                              ~
+Unexpected token ')' in expression or statement.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingEndParenthesisInExpression
+ 

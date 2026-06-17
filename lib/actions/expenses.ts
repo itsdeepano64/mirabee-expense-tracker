@@ -31,6 +31,7 @@ function revalidateAll() {
   revalidatePath("/dashboard");
   revalidatePath("/expenses");
   revalidatePath("/reports");
+  revalidatePath("/settings");
 }
 
 async function uploadReceipt(
@@ -56,6 +57,7 @@ export async function getCategories(): Promise<Category[]> {
   const { data, error } = await supabase
     .from("categories")
     .select("*")
+    .order("is_pinned", { ascending: false })
     .order("sort_order", { ascending: true });
 
   if (error) throw new Error(error.message);
@@ -229,6 +231,78 @@ export async function createCategory(data: {
 
   revalidateAll();
   return { success: true, category: { ...category, is_pinned: category.is_pinned ?? true } };
+}
+
+export async function getCategoryExpenseCount(
+  id: string
+): Promise<{ count: number } | { error: string }> {
+  const supabase = createServerClient();
+  const { count, error } = await supabase
+    .from("expenses")
+    .select("*", { count: "exact", head: true })
+    .eq("category_id", id);
+
+  if (error) return { error: error.message };
+  return { count: count ?? 0 };
+}
+
+export async function updateCategory(
+  id: string,
+  data: {
+    name: string;
+    is_cogs_default?: boolean;
+    is_pinned?: boolean;
+  }
+) {
+  const name = data.name.trim();
+  if (!name) return { error: "Category name is required" };
+
+  const supabase = createServerClient();
+  const { data: category, error } = await supabase
+    .from("categories")
+    .update({
+      name,
+      ...(data.is_cogs_default !== undefined && {
+        is_cogs_default: data.is_cogs_default,
+      }),
+      ...(data.is_pinned !== undefined && { is_pinned: data.is_pinned }),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "A category with that name already exists" };
+    }
+    return { error: error.message };
+  }
+
+  revalidateAll();
+  return {
+    success: true,
+    category: { ...category, is_pinned: category.is_pinned ?? false },
+  };
+}
+
+export async function deleteCategory(id: string) {
+  const countResult = await getCategoryExpenseCount(id);
+  if ("error" in countResult) return { error: countResult.error };
+
+  if (countResult.count > 0) {
+    return {
+      error: "Category has expenses",
+      expenseCount: countResult.count,
+    };
+  }
+
+  const supabase = createServerClient();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+
+  if (error) return { error: error.message };
+
+  revalidateAll();
+  return { success: true };
 }
 
 export async function createExpense(formData: FormData) {
