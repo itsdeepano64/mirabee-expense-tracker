@@ -245,16 +245,24 @@ export default function InvoicesPage() {
                     <option value="paid">Paid</option>
                   </select>
                 </Field>
-                <Field label="Issue Date"><input type="date" className="mb-field" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></Field>
-                <Field label="Due Date">
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, cursor: "pointer" }}>
-                    <input type="checkbox" checked={hasDueDate} onChange={(e) => setHasDueDate(e.target.checked)}
-                      style={{ width: 14, height: 14, cursor: "pointer", accentColor: "var(--mb-blue)" }} />
-                    <span style={{ fontSize: 11, color: "var(--mb-text-muted)" }}>Include due date</span>
-                  </label>
-                  {hasDueDate && <input type="date" className="mb-field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />}
-                </Field>
               </Grid2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+                <Field label="Issue Date">
+                  <input type="date" className="mb-field" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+                </Field>
+                <div>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
+                    <input type="checkbox" checked={hasDueDate} onChange={(e) => setHasDueDate(e.target.checked)}
+                      style={{ width: 16, height: 16, cursor: "pointer", accentColor: "var(--mb-blue)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--mb-text-muted)" }}>Include due date</span>
+                  </label>
+                  {hasDueDate && (
+                    <Field label="Due Date">
+                      <input type="date" className="mb-field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                    </Field>
+                  )}
+                </div>
+              </div>
             </Card>
 
             {/* From (auto-saved) */}
@@ -294,10 +302,10 @@ export default function InvoicesPage() {
               <Field label="Client Name *">
                 <input className="mb-field" placeholder="Client or business name" value={clientName} onChange={(e) => setClientName(e.target.value)} />
               </Field>
-              <Grid2 style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
                 <Field label="Email"><input className="mb-field" type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} /></Field>
-                <Field label="Phone"><input className="mb-field" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} /></Field>
-              </Grid2>
+                <Field label="Phone"><input className="mb-field" type="tel" value={clientPhone} onChange={(e) => setClientPhone(e.target.value)} /></Field>
+              </div>
               <Field label="Address" style={{ marginTop: 10 }}>
                 <input className="mb-field" value={clientAddress} onChange={(e) => setClientAddress(e.target.value)} />
               </Field>
@@ -310,42 +318,50 @@ export default function InvoicesPage() {
                   textTransform: "uppercase", letterSpacing: "0.06em" }}>Line Items</span>
                 <span style={{ fontSize: 12, color: "var(--mb-text-muted)" }}>{lines.length} item{lines.length !== 1 ? "s" : ""}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr 2fr auto", gap: 8,
-                padding: "6px 16px", background: "var(--mb-border)", borderTop: "1px solid var(--mb-border)" }}>
-                {["Description", "Qty", "Unit Price", ""].map((h) => (
-                  <span key={h} style={{ fontSize: 10, fontWeight: 700, color: "var(--mb-text-muted)",
-                    textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</span>
-                ))}
-              </div>
               {lines.map((line, idx) => (
-                <div key={line._id} style={{ display: "grid", gridTemplateColumns: "3fr 1fr 2fr auto",
-                  gap: 8, padding: "8px 16px", alignItems: "center",
-                  borderBottom: idx < lines.length - 1 ? "1px solid var(--mb-border)" : "none" }}>
-                  <input className="mb-field" style={{ fontSize: 13 }} placeholder="e.g. Bridal bouquet"
+                <div key={line._id} style={{
+                  padding: "12px 16px",
+                  borderTop: "1px solid var(--mb-border)",
+                  display: "flex", flexDirection: "column", gap: 8,
+                }}>
+                  {/* Description */}
+                  <input className="mb-field" placeholder="Description (e.g. Bridal bouquet)"
                     value={line.description} onChange={(e) => updateLine(line._id, "description", e.target.value)} />
-                  <input className="mb-field" style={{ fontSize: 13, textAlign: "center" }}
-                    type="number" min="0" step="1" value={line.quantity || ""}
-                    onChange={(e) => updateLine(line._id, "quantity", e.target.value)} />
-                  <input className="mb-field" style={{ fontSize: 13, textAlign: "right" }}
-                    type="number" min="0" step="0.01" placeholder="0.00" value={line.unitPrice || ""}
-                    onChange={(e) => updateLine(line._id, "unitPrice", e.target.value)} />
-                  <button type="button" onClick={() => removeLine(line._id)} disabled={lines.length === 1}
-                    aria-label="Remove line"
-                    style={{ width: 30, height: 30, borderRadius: 8, border: "none", flexShrink: 0,
-                      background: lines.length === 1 ? "transparent" : "var(--mb-pink-light)",
-                      color: lines.length === 1 ? "var(--mb-border)" : "var(--mb-pink)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      cursor: lines.length === 1 ? "default" : "pointer" }}>
-                    <Trash2 size={14} />
-                  </button>
+                  {/* Qty × Price = Amount + delete */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 12, color: "var(--mb-text-muted)", flexShrink: 0 }}>Qty</span>
+                    <input className="mb-field" type="number" min="0" step="1"
+                      value={line.quantity || ""}
+                      onChange={(e) => updateLine(line._id, "quantity", e.target.value)}
+                      style={{ width: 56, textAlign: "center" }} />
+                    <span style={{ fontSize: 12, color: "var(--mb-text-muted)", flexShrink: 0 }}>× $</span>
+                    <input className="mb-field" type="number" min="0" step="0.01" placeholder="0.00"
+                      value={line.unitPrice || ""}
+                      onChange={(e) => updateLine(line._id, "unitPrice", e.target.value)}
+                      style={{ flex: 1, textAlign: "right" }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--mb-text)",
+                      flexShrink: 0, minWidth: 64, textAlign: "right" }}>
+                      {fmt(line.quantity * line.unitPrice)}
+                    </span>
+                    <button type="button" onClick={() => removeLine(line._id)} disabled={lines.length === 1}
+                      aria-label="Remove line"
+                      style={{ width: 36, height: 36, borderRadius: 10, border: "none", flexShrink: 0,
+                        background: lines.length === 1 ? "transparent" : "var(--mb-pink-light)",
+                        color: lines.length === 1 ? "var(--mb-border-strong)" : "var(--mb-pink)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        cursor: lines.length === 1 ? "default" : "pointer" }}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
               ))}
               <div style={{ padding: "10px 16px 14px" }}>
                 <button type="button" onClick={() => setLines((prev) => [...prev, newLine()])}
-                  style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    width: "100%", cursor: "pointer",
                     background: "var(--mb-blue-xlight)", border: "1.5px dashed var(--mb-blue-light)",
-                    borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 600, color: "var(--mb-blue)" }}>
-                  <Plus size={15} /> Add Line Item
+                    borderRadius: 12, padding: "12px 16px", fontSize: 14, fontWeight: 600, color: "var(--mb-blue)" }}>
+                  <Plus size={16} /> Add Line Item
                 </button>
               </div>
             </div>
