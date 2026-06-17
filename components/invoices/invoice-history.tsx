@@ -14,6 +14,10 @@ export type SavedInvoice = {
   total: number;
   status: "draft" | "sent" | "paid";
   data: Omit<InvoiceData, "logoUrl">;
+  // Payment tracking
+  amountPaid?: number;
+  paymentNotes?: string;
+  paidAt?: string;
 };
 
 const RedownloadButton = dynamic(

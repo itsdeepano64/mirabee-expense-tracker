@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.blue,
   },
-  logo: { width: 110, height: 110, objectFit: "contain" },
+  logo: { width: 160, height: 160, objectFit: "contain" },
   headerRight: { alignItems: "flex-end", justifyContent: "flex-end" },
   invoiceTitle: { fontSize: 32, fontWeight: "bold", color: C.blue, letterSpacing: 2 },
   invoiceNum:   { fontSize: 11, color: C.muted, marginTop: 4 },
@@ -289,12 +289,8 @@ export function InvoiceDocument({ data }: { data: InvoiceData }) {
 
         {/* ── Footer ── */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerLeft}>
-            {data.fromName} · mirabeeflowers.com
-          </Text>
-          <Text style={styles.footerRight}>
-            Invoice #{data.invoiceNumber} · Generated {format(new Date(), "MMM d, yyyy")}
-          </Text>
+          <Text style={styles.footerLeft}>{data.fromName}</Text>
+          <Text style={styles.footerRight}>Invoice #{data.invoiceNumber}</Text>
         </View>
 
       </Page>

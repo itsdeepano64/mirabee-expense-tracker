@@ -56,10 +56,11 @@ export default function InvoicesPage() {
   const [fromOpen,    setFromOpen]    = useState(false);
 
   // Invoice meta
-  const [invNum,    setInvNum]    = useState("");
-  const [issueDate, setIssueDate] = useState(TODAY);
-  const [dueDate,   setDueDate]   = useState(DUE_30);
-  const [status,    setStatus]    = useState<"draft" | "sent" | "paid">("draft");
+  const [invNum,      setInvNum]      = useState("");
+  const [issueDate,   setIssueDate]   = useState(TODAY);
+  const [dueDate,     setDueDate]     = useState(DUE_30);
+  const [hasDueDate,  setHasDueDate]  = useState(true);
+  const [status,      setStatus]      = useState<"draft" | "sent" | "paid">("draft");
 
   // Bill-to
   const [clientName,    setClientName]    = useState("");
@@ -109,7 +110,7 @@ export default function InvoicesPage() {
 
   const invoiceData: InvoiceData = {
     invoiceNumber: invNum, issueDate,
-    dueDate: dueDate || undefined, status,
+    dueDate: hasDueDate && dueDate ? dueDate : undefined, status,
     fromName, fromEmail: fromEmail || undefined,
     fromPhone: fromPhone || undefined, fromAddress: fromAddress || undefined,
     clientName: clientName || "Client",
@@ -155,6 +156,7 @@ export default function InvoicesPage() {
     setStatus("draft");
     setIssueDate(TODAY);
     setDueDate(DUE_30);
+    setHasDueDate(true);
     setSaved((prev) => {
       setInvNum(String(prev.length + 1).padStart(4, "0"));
       return prev;
@@ -168,6 +170,7 @@ export default function InvoicesPage() {
     const d = inv.data;
     setInvNum(d.invoiceNumber);
     setIssueDate(d.issueDate);
+    setHasDueDate(!!d.dueDate);
     setDueDate(d.dueDate ?? DUE_30);
     setStatus(d.status ?? "draft");
     setClientName(d.clientName ?? "");
@@ -178,6 +181,15 @@ export default function InvoicesPage() {
     setNotes(d.notes ?? "");
     setLines(d.lineItems.map((l) => ({ ...l, _id: ++_id })));
     setView("form");
+  }
+
+  // Update saved invoice (payment tracking, etc.)
+  function handleUpdate(id: string, updates: Partial<SavedInvoice>) {
+    setSaved((prev) => {
+      const updated = prev.map((inv) => inv.id === id ? { ...inv, ...updates } : inv);
+      try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+      return updated;
+    });
   }
 
   // Line helpers
@@ -196,7 +208,7 @@ export default function InvoicesPage() {
 
         {/* LIST VIEW */}
         {view === "list" && (
-          <InvoiceList saved={saved} onNew={handleNew} onEdit={handleEdit} />
+          <InvoiceList saved={saved} onNew={handleNew} onEdit={handleEdit} onUpdate={handleUpdate} />
         )}
 
         {/* FORM VIEW */}
@@ -234,7 +246,14 @@ export default function InvoicesPage() {
                   </select>
                 </Field>
                 <Field label="Issue Date"><input type="date" className="mb-field" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} /></Field>
-                <Field label="Due Date"><input type="date" className="mb-field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></Field>
+                <Field label="Due Date">
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5, cursor: "pointer" }}>
+                    <input type="checkbox" checked={hasDueDate} onChange={(e) => setHasDueDate(e.target.checked)}
+                      style={{ width: 14, height: 14, cursor: "pointer", accentColor: "var(--mb-blue)" }} />
+                    <span style={{ fontSize: 11, color: "var(--mb-text-muted)" }}>Include due date</span>
+                  </label>
+                  {hasDueDate && <input type="date" className="mb-field" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />}
+                </Field>
               </Grid2>
             </Card>
 
