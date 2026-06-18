@@ -8,6 +8,7 @@ import { AppShell } from "@/components/shell/app-shell";
 import { InvoiceList } from "@/components/invoices/invoice-list";
 import type { SavedInvoice } from "@/components/invoices/invoice-history";
 import type { InvoiceData, InvoiceLineItem } from "@/lib/pdf/invoice-document";
+import { getInvoices, upsertInvoice, updateInvoiceRecord, getFromInfo, saveFromInfo } from "@/lib/actions/invoices";
 
 const LS_FROM      = "mirabee-from-info";
 const LS_INVOICES  = "mirabee-invoices";
@@ -75,8 +76,9 @@ export default function InvoicesPage() {
   const [taxRate, setTaxRate] = useState("");
   const [notes,   setNotes]   = useState("");
 
-  // Load from localStorage on mount
+  // Load on mount: localStorage first (instant), then Supabase (cross-device sync)
   useEffect(() => {
+    // 1. Instant load from localStorage (no delay)
     try {
       const f = JSON.parse(localStorage.getItem(LS_FROM) ?? "{}");
       if (f.fromName)    setFromName(f.fromName);
@@ -84,23 +86,41 @@ export default function InvoicesPage() {
       if (f.fromPhone)   setFromPhone(f.fromPhone);
       if (f.fromAddress) setFromAddress(f.fromAddress);
     } catch { /**/ }
-
     try {
       const list: SavedInvoice[] = JSON.parse(localStorage.getItem(LS_INVOICES) ?? "[]");
       setSaved(list);
-      const seq = list.length + 1;
-      setInvNum(String(seq).padStart(4, "0"));
+      setInvNum(String(list.length + 1).padStart(4, "0"));
     } catch {
       setInvNum("0001");
     }
     setFromLoaded(true);
+
+    // 2. Sync from Supabase (works across devices)
+    void (async () => {
+      try {
+        const [invoices, fromInfo] = await Promise.all([getInvoices(), getFromInfo()]);
+        // Update invoices
+        setSaved(invoices);
+        try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
+        setInvNum(String(invoices.length + 1).padStart(4, "0"));
+        // Update from info (only if Supabase has data)
+        if (fromInfo && fromInfo.fromName) {
+          setFromName(fromInfo.fromName);
+          setFromEmail(fromInfo.fromEmail);
+          setFromPhone(fromInfo.fromPhone);
+          setFromAddress(fromInfo.fromAddress);
+          try { localStorage.setItem(LS_FROM, JSON.stringify(fromInfo)); } catch { /**/ }
+        }
+      } catch { /**/ }
+    })();
   }, []);
 
-  // Auto-save From fields
+  // Auto-save From fields (localStorage + Supabase)
   useEffect(() => {
     if (!fromLoaded) return;
-    try { localStorage.setItem(LS_FROM, JSON.stringify({ fromName, fromEmail, fromPhone, fromAddress })); }
-    catch { /**/ }
+    const info = { fromName, fromEmail, fromPhone, fromAddress };
+    try { localStorage.setItem(LS_FROM, JSON.stringify(info)); } catch { /**/ }
+    void saveFromInfo(info);
   }, [fromLoaded, fromName, fromEmail, fromPhone, fromAddress]);
 
   // Derived totals
@@ -134,6 +154,7 @@ export default function InvoicesPage() {
     setSaved((prev) => {
       const updated = [record, ...prev];
       try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+      void upsertInvoice(record);
       return updated;
     });
     // Navigate to list after a short delay so PDF download can initiate
@@ -188,6 +209,7 @@ export default function InvoicesPage() {
     setSaved((prev) => {
       const updated = prev.map((inv) => inv.id === id ? { ...inv, ...updates } : inv);
       try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+      void updateInvoiceRecord(id, updates);
       return updated;
     });
   }
