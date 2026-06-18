@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Receipt, Leaf, PieChart, Search } from 'lucide-react';
+import { Receipt, Leaf, PieChart, Search, FileText } from 'lucide-react';
 import { hasEntrySession, setEntrySession } from '@/lib/client/session';
 
-const FEATURES = [
-  { icon: Receipt, bg: 'var(--mb-blue-xlight)',  color: 'var(--mb-blue)',        title: 'Log expenses', sub: 'Fast entry with receipt photos' },
-  { icon: Leaf,    bg: 'var(--mb-green-light)',   color: 'var(--mb-green)',       title: 'Track COGS',   sub: 'Inventory & cost of goods'      },
-  { icon: PieChart,bg: 'var(--mb-pink-light)',    color: 'var(--mb-pink)',        title: 'Reports',      sub: 'PDF & CSV export'               },
-  { icon: Search,  bg: 'var(--mb-border)',         color: 'var(--mb-text-muted)', title: 'Filter & search', sub: 'Find any expense fast'       },
+const FEATURES_GRID = [
+  { icon: Receipt, bg: 'var(--mb-blue-xlight)',  color: 'var(--mb-blue)',        title: 'Log expenses',    sub: 'Fast entry with receipt photos' },
+  { icon: Leaf,    bg: 'var(--mb-green-light)',   color: 'var(--mb-green)',       title: 'Track COGS',      sub: 'Inventory & cost of goods'      },
+  { icon: PieChart,bg: 'var(--mb-pink-light)',    color: 'var(--mb-pink)',        title: 'Reports',         sub: 'PDF & CSV export'               },
+  { icon: Search,  bg: 'var(--mb-border)',         color: 'var(--mb-text-muted)', title: 'Filter & search', sub: 'Find any expense fast'          },
 ];
 
 export default function RootPage() {
@@ -68,7 +68,7 @@ export default function RootPage() {
           Mirabee Flowers
         </h1>
         <p style={{ fontSize: 14, color: 'var(--mb-text-muted)', marginTop: 8, lineHeight: 1.55, position: 'relative', zIndex: 1 }}>
-          Track shop expenses, receipts &amp; inventory<br />— all in one place.
+          Track expenses, create invoices &amp; manage<br />your flower shop — all in one place.
         </p>
 
         <div style={{ width: 36, height: 3, background: 'var(--mb-border)', borderRadius: 2, margin: '24px auto 22px', position: 'relative', zIndex: 1 }} />
@@ -83,8 +83,31 @@ export default function RootPage() {
 
       {/* ── Feature cards ── */}
       <div style={{ padding: '20px var(--mb-page-x)' }}>
+
+        {/* Invoices — full-width hero card */}
+        <div className="mb-card" style={{
+          padding: '16px 18px', marginBottom: 10,
+          background: 'linear-gradient(135deg, var(--mb-blue-xlight) 0%, var(--mb-pink-light) 100%)',
+          border: '1.5px solid var(--mb-blue-light)',
+          display: 'flex', alignItems: 'center', gap: 14,
+        }}>
+          <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0,
+            background: 'linear-gradient(135deg, var(--mb-blue), var(--mb-blue-dark))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 3px 10px rgba(107,168,186,0.4)' }}>
+            <FileText size={20} color="white" strokeWidth={2} />
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--mb-text)', marginBottom: 2 }}>Create Invoices</div>
+            <div style={{ fontSize: 12, color: 'var(--mb-text-muted)', lineHeight: 1.4 }}>
+              Professional invoices with PDF download &amp; payment tracking
+            </div>
+          </div>
+        </div>
+
+        {/* 2x2 grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {FEATURES.map(({ icon: Icon, bg, color, title, sub }) => (
+          {FEATURES_GRID.map(({ icon: Icon, bg, color, title, sub }) => (
             <div key={title} className="mb-card" style={{ padding: '14px 12px', textAlign: 'center' }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 9px' }}>
                 <Icon size={16} color={color} strokeWidth={2} />
