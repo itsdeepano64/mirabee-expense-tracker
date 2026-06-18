@@ -153,13 +153,17 @@ export default function InvoicesPage() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
     };
-    setSaved((prev) => {
-      const updated = [record, ...prev];
-      try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
-      void upsertInvoice(record);
-      return updated;
+    // 1. Save locally (synchronous, instant)
+    const updated = [...saved, record].sort(
+      (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
+    );
+    setSaved(updated);
+    try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+    // 2. Sync to Supabase (outside state updater — fires once, reliably)
+    upsertInvoice(record).then((ok) => {
+      if (!ok) console.error("[mirabee] upsertInvoice failed for", record.id);
     });
-    // Navigate to list after a short delay so PDF download can initiate
+    // 3. Navigate to list after short delay so PDF download can initiate
     setTimeout(() => {
       setView("list");
       setEditingInv(null);
@@ -208,12 +212,10 @@ export default function InvoicesPage() {
 
   // Update saved invoice (payment tracking, etc.)
   function handleUpdate(id: string, updates: Partial<SavedInvoice>) {
-    setSaved((prev) => {
-      const updated = prev.map((inv) => inv.id === id ? { ...inv, ...updates } : inv);
-      try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
-      void updateInvoiceRecord(id, updates);
-      return updated;
-    });
+    const updated = saved.map((inv) => inv.id === id ? { ...inv, ...updates } : inv);
+    setSaved(updated);
+    try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+    updateInvoiceRecord(id, updates).catch((e) => console.error("[mirabee] updateInvoiceRecord failed", e));
   }
 
   // Line helpers
