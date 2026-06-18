@@ -48,6 +48,7 @@ export default function InvoicesPage() {
   // Persisted
   const [saved,      setSaved]      = useState<SavedInvoice[]>([]);
   const [fromLoaded, setFromLoaded] = useState(false);
+  const [syncError,  setSyncError]  = useState<string | null>(null);
 
   // From
   const [fromName,    setFromName]    = useState("Mirabee Flowers");
@@ -98,14 +99,15 @@ export default function InvoicesPage() {
     // 2. Sync from Supabase (works across devices)
     void (async () => {
       try {
-        const [{ invoices, ok }, fromInfo] = await Promise.all([getInvoices(), getFromInfo()]);
-        // Only overwrite local data if Supabase confirmed success — never clobber with an error-fallback []
+        const [{ invoices, ok, error: invErr }, fromInfo] = await Promise.all([getInvoices(), getFromInfo()]);
         if (ok) {
+          setSyncError(null);
           setSaved(invoices);
           try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
           setInvNum(String(invoices.length + 1).padStart(4, "0"));
+        } else {
+          setSyncError(invErr ?? "Supabase read failed");
         }
-        // Update from info (only if Supabase has data)
         if (fromInfo && fromInfo.fromName) {
           setFromName(fromInfo.fromName);
           setFromEmail(fromInfo.fromEmail);
@@ -113,7 +115,9 @@ export default function InvoicesPage() {
           setFromAddress(fromInfo.fromAddress);
           try { localStorage.setItem(LS_FROM, JSON.stringify(fromInfo)); } catch { /**/ }
         }
-      } catch { /**/ }
+      } catch (e) {
+        setSyncError(String(e));
+      }
     })();
   }, []);
 
@@ -145,8 +149,29 @@ export default function InvoicesPage() {
     logoUrl: logoUrl(),
   };
 
+  // Save changes to an existing invoice (no PDF generated)
+  function handleSaveEdits() {
+    if (!editingInv) return;
+    const updates: Partial<SavedInvoice> = {
+      invoiceNumber: invNum,
+      clientName: clientName || "Client",
+      total,
+      status,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
+    };
+    handleUpdate(editingInv.id, updates);
+    setView("list");
+    setEditingInv(null);
+  }
+
   // Save on download, then go to list
   function handleDownload() {
+    // If editing, re-issue updates the existing record + generates new PDF
+    if (editingInv) {
+      handleSaveEdits();
+      return;
+    }
     const record: SavedInvoice = {
       id: crypto.randomUUID(), savedAt: new Date().toISOString(),
       invoiceNumber: invNum, clientName: clientName || "Client", total, status,
@@ -154,14 +179,13 @@ export default function InvoicesPage() {
       data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
     };
     // 1. Save locally (synchronous, instant)
-    const updated = [...saved, record].sort(
-      (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
-    );
+    const updated = [record, ...saved];
     setSaved(updated);
     try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
     // 2. Sync to Supabase (outside state updater — fires once, reliably)
-    upsertInvoice(record).then((ok) => {
-      if (!ok) console.error("[mirabee] upsertInvoice failed for", record.id);
+    upsertInvoice(record).then(({ ok, error: upsertErr }) => {
+      if (!ok) setSyncError(`Save failed: ${upsertErr ?? "unknown error"}`);
+      else setSyncError(null);
     });
     // 3. Navigate to list after short delay so PDF download can initiate
     setTimeout(() => {
@@ -231,6 +255,15 @@ export default function InvoicesPage() {
   return (
     <AppShell>
       <div style={{ padding: "16px var(--mb-page-x) 40px", display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* Sync error banner */}
+        {syncError && (
+          <div style={{ background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 10,
+            padding: "10px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>
+            <strong>⚠ Sync error</strong> — invoices are saved on this device only.<br />
+            <span style={{ fontFamily: "monospace", fontSize: 11 }}>{syncError}</span>
+          </div>
+        )}
 
         {/* LIST VIEW */}
         {view === "list" && (
@@ -417,8 +450,22 @@ export default function InvoicesPage() {
                 value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Card>
 
-            {/* Download */}
-            <InvoiceDownloadButton data={invoiceData} onDownload={handleDownload} />
+            {/* Save Changes (edit mode) or Download (new invoice) */}
+            {editingInv ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={handleSaveEdits}
+                  style={{ width: "100%", padding: "16px", borderRadius: "var(--mb-r-lg)",
+                    background: "var(--mb-blue)", border: "none", cursor: "pointer",
+                    fontSize: 15, fontWeight: 700, color: "white" }}>
+                  Save Changes
+                </button>
+                <InvoiceDownloadButton data={invoiceData} onDownload={handleDownload} />
+              </div>
+            ) : (
+              <InvoiceDownloadButton data={invoiceData} onDownload={handleDownload} />
+            )}
           </>
         )}
 
