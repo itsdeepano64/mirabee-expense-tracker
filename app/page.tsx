@@ -87,15 +87,13 @@ export default function RootPage() {
         {/* Invoices — full-width hero card */}
         <div className="mb-card" style={{
           padding: '16px 18px', marginBottom: 10,
-          background: 'linear-gradient(135deg, var(--mb-blue-xlight) 0%, var(--mb-pink-light) 100%)',
           border: '1.5px solid var(--mb-blue-light)',
           display: 'flex', alignItems: 'center', gap: 14,
         }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, flexShrink: 0,
-            background: 'linear-gradient(135deg, var(--mb-blue), var(--mb-blue-dark))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 3px 10px rgba(107,168,186,0.4)' }}>
-            <FileText size={20} color="white" strokeWidth={2} />
+            background: 'var(--mb-blue-xlight)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <FileText size={20} color="var(--mb-blue)" strokeWidth={2} />
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--mb-text)', marginBottom: 2 }}>Create Invoices</div>
