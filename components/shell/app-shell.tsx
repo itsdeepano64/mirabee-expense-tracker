@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Receipt, PieChart, Settings, FileText } from 'lucide-react';
 import { MirabeeLogo } from '@/components/brand/mirabee-logo';
+import { InvoiceNotifications } from '@/components/notifications/invoice-notifications';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Home',     Icon: Home     },
@@ -71,24 +72,13 @@ function DefaultHeader() {
     <header className="mb-app-header">
       <MirabeeLogo size="sm" showWordmark direction="row" />
       <div style={{ display: 'flex', gap: 8 }}>
-        <button className="mb-hdr-btn" aria-label="Notifications">
-          <Bell size={17} />
-        </button>
-        <button className="mb-hdr-btn" aria-label="Settings">
-          <Settings size={17} />
-        </button>
+        <InvoiceNotifications />
+        <Link href="/settings">
+          <button className="mb-hdr-btn" aria-label="Settings">
+            <Settings size={17} />
+          </button>
+        </Link>
       </div>
     </header>
-  );
-}
-
-/* Small inline import for Bell icon */
-function Bell({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-    </svg>
   );
 }
