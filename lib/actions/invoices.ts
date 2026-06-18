@@ -37,19 +37,20 @@ function invoiceToRow(inv: SavedInvoice) {
 
 // ── Invoice actions ───────────────────────────────────────────────────────────
 
-export async function getInvoices(): Promise<SavedInvoice[]> {
+export async function getInvoices(): Promise<{ invoices: SavedInvoice[]; ok: boolean }> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("invoices")
     .select("*")
     .order("saved_at", { ascending: false });
-  if (error) return [];
-  return (data ?? []).map(rowToInvoice);
+  if (error) return { invoices: [], ok: false };
+  return { invoices: (data ?? []).map(rowToInvoice), ok: true };
 }
 
-export async function upsertInvoice(inv: SavedInvoice): Promise<void> {
+export async function upsertInvoice(inv: SavedInvoice): Promise<boolean> {
   const supabase = createServerClient();
-  await supabase.from("invoices").upsert(invoiceToRow(inv));
+  const { error } = await supabase.from("invoices").upsert(invoiceToRow(inv));
+  return !error;
 }
 
 export async function updateInvoiceRecord(

@@ -98,11 +98,13 @@ export default function InvoicesPage() {
     // 2. Sync from Supabase (works across devices)
     void (async () => {
       try {
-        const [invoices, fromInfo] = await Promise.all([getInvoices(), getFromInfo()]);
-        // Update invoices
-        setSaved(invoices);
-        try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
-        setInvNum(String(invoices.length + 1).padStart(4, "0"));
+        const [{ invoices, ok }, fromInfo] = await Promise.all([getInvoices(), getFromInfo()]);
+        // Only overwrite local data if Supabase confirmed success — never clobber with an error-fallback []
+        if (ok) {
+          setSaved(invoices);
+          try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
+          setInvNum(String(invoices.length + 1).padStart(4, "0"));
+        }
         // Update from info (only if Supabase has data)
         if (fromInfo && fromInfo.fromName) {
           setFromName(fromInfo.fromName);
