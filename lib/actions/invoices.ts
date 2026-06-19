@@ -115,3 +115,36 @@ export async function saveFromInfo(info: FromInfo): Promise<void> {
     updated_at:   new Date().toISOString(),
   });
 }
+
+// ── Revenue / receivables for reports ────────────────────────────────────────
+
+export async function getRevenue(
+  startDate: string,
+  endDate: string
+): Promise<{ revenue: number; receivables: number; ok: boolean; error?: string }> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("amount_paid, total, status, paid_at");
+  if (error) return { revenue: 0, receivables: 0, ok: false, error: error.message };
+
+  const start = new Date(startDate).getTime();
+  const end   = new Date(endDate + "T23:59:59.999Z").getTime();
+
+  let revenue     = 0;
+  let receivables = 0;
+
+  for (const row of data ?? []) {
+    if (row.status === "paid" && row.paid_at) {
+      const paidMs = new Date(row.paid_at).getTime();
+      if (paidMs >= start && paidMs <= end) {
+        revenue += Number(row.amount_paid ?? row.total);
+      }
+    } else if (row.status !== "paid") {
+      // All-time outstanding — total money Jenni is still owed
+      receivables += Number(row.total);
+    }
+  }
+
+  return { revenue, receivables, ok: true };
+}
