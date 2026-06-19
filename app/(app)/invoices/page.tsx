@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import dynamic from "next/dynamic";
 import { Plus, Trash2, FileText, ChevronDown, ChevronUp, RotateCcw, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { AppShell } from "@/components/shell/app-shell";
@@ -15,19 +14,6 @@ const LS_INVOICES  = "mirabee-invoices";
 const TODAY        = format(new Date(), "yyyy-MM-dd");
 const DUE_30       = format(new Date(Date.now() + 30 * 86_400_000), "yyyy-MM-dd");
 
-const InvoiceDownloadButton = dynamic(
-  () => import("@/components/invoices/invoice-download-button").then((m) => m.InvoiceDownloadButton),
-  {
-    ssr: false,
-    loading: () => (
-      <div style={{ height: 54, borderRadius: "var(--mb-r-lg)", background: "var(--mb-border)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 15, fontWeight: 700, color: "var(--mb-text-muted)" }}>
-        Preparing PDF...
-      </div>
-    ),
-  }
-);
 
 let _id = 0;
 type Line = InvoiceLineItem & { _id: number };
@@ -165,33 +151,23 @@ export default function InvoicesPage() {
     setEditingInv(null);
   }
 
-  // Save on download, then go to list
-  function handleDownload() {
-    // If editing, re-issue updates the existing record + generates new PDF
-    if (editingInv) {
-      handleSaveEdits();
-      return;
-    }
+  // Create new invoice (save only, no PDF download)
+  function handleCreate() {
     const record: SavedInvoice = {
       id: crypto.randomUUID(), savedAt: new Date().toISOString(),
       invoiceNumber: invNum, clientName: clientName || "Client", total, status,
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
     };
-    // 1. Save locally (synchronous, instant)
     const updated = [record, ...saved];
     setSaved(updated);
     try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
-    // 2. Sync to Supabase (outside state updater — fires once, reliably)
     upsertInvoice(record).then(({ ok, error: upsertErr }) => {
       if (!ok) setSyncError(`Save failed: ${upsertErr ?? "unknown error"}`);
       else setSyncError(null);
     });
-    // 3. Navigate to list after short delay so PDF download can initiate
-    setTimeout(() => {
-      setView("list");
-      setEditingInv(null);
-    }, 400);
+    setView("list");
+    setEditingInv(null);
   }
 
   // Open blank form for new invoice
@@ -450,21 +426,27 @@ export default function InvoicesPage() {
                 value={notes} onChange={(e) => setNotes(e.target.value)} />
             </Card>
 
-            {/* Save Changes (edit mode) or Download (new invoice) */}
+            {/* Save Changes (edit mode) or Create (new invoice) */}
             {editingInv ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={handleSaveEdits}
-                  style={{ width: "100%", padding: "16px", borderRadius: "var(--mb-r-lg)",
-                    background: "var(--mb-blue)", border: "none", cursor: "pointer",
-                    fontSize: 15, fontWeight: 700, color: "white" }}>
-                  Save Changes
-                </button>
-                <InvoiceDownloadButton data={invoiceData} onDownload={handleDownload} />
-              </div>
+              <button
+                type="button"
+                onClick={handleSaveEdits}
+                style={{ width: "100%", padding: "16px", borderRadius: "var(--mb-r-lg)",
+                  background: "var(--mb-blue)", border: "none", cursor: "pointer",
+                  fontSize: 15, fontWeight: 700, color: "white" }}>
+                Save Changes
+              </button>
             ) : (
-              <InvoiceDownloadButton data={invoiceData} onDownload={handleDownload} />
+              <button
+                type="button"
+                onClick={handleCreate}
+                style={{ width: "100%", padding: "16px", borderRadius: "var(--mb-r-lg)",
+                  background: "linear-gradient(135deg, #16a34a, #15803d)",
+                  border: "none", cursor: "pointer",
+                  fontSize: 15, fontWeight: 700, color: "white",
+                  boxShadow: "0 4px 16px rgba(22,163,74,0.35)" }}>
+                Create Invoice
+              </button>
             )}
           </>
         )}
