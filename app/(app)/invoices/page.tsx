@@ -5,15 +5,13 @@ import { Plus, Trash2, FileText, ChevronDown, ChevronUp, RotateCcw, ArrowLeft } 
 import { format } from "date-fns";
 import { AppShell } from "@/components/shell/app-shell";
 import { InvoiceList } from "@/components/invoices/invoice-list";
+import { InvoicePreview } from "@/components/invoices/invoice-preview";
 import type { SavedInvoice } from "@/components/invoices/invoice-history";
 import type { InvoiceData, InvoiceLineItem } from "@/lib/pdf/invoice-document";
-import { getInvoices, upsertInvoice, updateInvoiceRecord, getFromInfo, saveFromInfo } from "@/lib/actions/invoices";
+import { getInvoices, upsertInvoice, updateInvoiceRecord, deleteInvoice, getFromInfo, saveFromInfo } from "@/lib/actions/invoices";
 
 const LS_FROM      = "mirabee-from-info";
 const LS_INVOICES  = "mirabee-invoices";
-const TODAY        = format(new Date(), "yyyy-MM-dd");
-const DUE_30       = format(new Date(Date.now() + 30 * 86_400_000), "yyyy-MM-dd");
-
 
 let _id = 0;
 type Line = InvoiceLineItem & { _id: number };
@@ -25,11 +23,15 @@ function logoUrl() {
   return `${window.location.origin}/mirabee-flowers-logo.png`;
 }
 
+function todayStr() { return format(new Date(), "yyyy-MM-dd"); }
+function due30Str()  { return format(new Date(Date.now() + 30 * 86_400_000), "yyyy-MM-dd"); }
+
 type View = "list" | "form";
 
 export default function InvoicesPage() {
-  const [view,       setView]       = useState<View>("list");
-  const [editingInv, setEditingInv] = useState<SavedInvoice | null>(null);
+  const [view,             setView]             = useState<View>("list");
+  const [editingInv,       setEditingInv]       = useState<SavedInvoice | null>(null);
+  const [justCreatedInv,   setJustCreatedInv]   = useState<SavedInvoice | null>(null);
 
   // Persisted
   const [saved,      setSaved]      = useState<SavedInvoice[]>([]);
@@ -38,17 +40,17 @@ export default function InvoicesPage() {
 
   // From
   const [fromName,    setFromName]    = useState("Mirabee Flowers");
-  const [fromEmail,   setFromEmail]   = useState("jenni@mirabeeflowers.com");
+  const [fromEmail,   setFromEmail]   = useState("");
   const [fromPhone,   setFromPhone]   = useState("");
   const [fromAddress, setFromAddress] = useState("Carlinville, IL");
   const [fromOpen,    setFromOpen]    = useState(false);
 
   // Invoice meta
   const [invNum,      setInvNum]      = useState("");
-  const [issueDate,   setIssueDate]   = useState(TODAY);
-  const [dueDate,     setDueDate]     = useState(DUE_30);
+  const [issueDate,   setIssueDate]   = useState(todayStr());
+  const [dueDate,     setDueDate]     = useState(due30Str());
   const [hasDueDate,  setHasDueDate]  = useState(true);
-  const [status,      setStatus]      = useState<"draft" | "sent" | "paid">("draft");
+  const [status,      setStatus]      = useState<"draft" | "sent">("draft");
 
   // Bill-to
   const [clientName,    setClientName]    = useState("");
@@ -122,7 +124,8 @@ export default function InvoicesPage() {
 
   const invoiceData: InvoiceData = {
     invoiceNumber: invNum, issueDate,
-    dueDate: hasDueDate && dueDate ? dueDate : undefined, status,
+    dueDate: hasDueDate && dueDate ? dueDate : undefined,
+    status: status as "draft" | "sent" | "paid",
     fromName, fromEmail: fromEmail || undefined,
     fromPhone: fromPhone || undefined, fromAddress: fromAddress || undefined,
     clientName: clientName || "Client",
@@ -135,6 +138,13 @@ export default function InvoicesPage() {
     logoUrl: logoUrl(),
   };
 
+  // Navigate back from form — confirm only if editing an existing invoice
+  function handleBack() {
+    if (editingInv && !window.confirm("Leave without saving? Your changes will be lost.")) return;
+    setView("list");
+    setEditingInv(null);
+  }
+
   // Save changes to an existing invoice (no PDF generated)
   function handleSaveEdits() {
     if (!editingInv) return;
@@ -142,7 +152,7 @@ export default function InvoicesPage() {
       invoiceNumber: invNum,
       clientName: clientName || "Client",
       total,
-      status,
+      status: status as "draft" | "sent" | "paid",
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
     };
@@ -151,11 +161,12 @@ export default function InvoicesPage() {
     setEditingInv(null);
   }
 
-  // Create new invoice (save only, no PDF download)
+  // Create new invoice — save then show preview
   function handleCreate() {
     const record: SavedInvoice = {
       id: crypto.randomUUID(), savedAt: new Date().toISOString(),
-      invoiceNumber: invNum, clientName: clientName || "Client", total, status,
+      invoiceNumber: invNum, clientName: clientName || "Client", total,
+      status: status as "draft" | "sent" | "paid",
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       data: (({ logoUrl: _l, ...rest }) => rest)(invoiceData),
     };
@@ -166,8 +177,10 @@ export default function InvoicesPage() {
       if (!ok) setSyncError(`Save failed: ${upsertErr ?? "unknown error"}`);
       else setSyncError(null);
     });
+    // Go to list first, then open preview overlay so closing preview shows the list
     setView("list");
     setEditingInv(null);
+    setJustCreatedInv(record);
   }
 
   // Open blank form for new invoice
@@ -181,13 +194,11 @@ export default function InvoicesPage() {
     setTaxRate("");
     setNotes("");
     setStatus("draft");
-    setIssueDate(TODAY);
-    setDueDate(DUE_30);
+    setIssueDate(todayStr());
+    setDueDate(due30Str());
     setHasDueDate(true);
-    setSaved((prev) => {
-      setInvNum(String(prev.length + 1).padStart(4, "0"));
-      return prev;
-    });
+    // Compute next invoice number from current saved length (safe — no side effect in updater)
+    setInvNum(String(saved.length + 1).padStart(4, "0"));
     setView("form");
   }
 
@@ -198,8 +209,9 @@ export default function InvoicesPage() {
     setInvNum(d.invoiceNumber);
     setIssueDate(d.issueDate);
     setHasDueDate(!!d.dueDate);
-    setDueDate(d.dueDate ?? DUE_30);
-    setStatus(d.status ?? "draft");
+    setDueDate(d.dueDate ?? due30Str());
+    // If the stored status is "paid", keep it readable but don't let form change it (paid = read-only)
+    setStatus((d.status === "paid" ? "sent" : d.status) as "draft" | "sent");
     setClientName(d.clientName ?? "");
     setClientEmail(d.clientEmail ?? "");
     setClientPhone(d.clientPhone ?? "");
@@ -210,12 +222,22 @@ export default function InvoicesPage() {
     setView("form");
   }
 
-  // Update saved invoice (payment tracking, etc.)
+  // Update saved invoice (payment tracking, edits, etc.)
   function handleUpdate(id: string, updates: Partial<SavedInvoice>) {
     const updated = saved.map((inv) => inv.id === id ? { ...inv, ...updates } : inv);
     setSaved(updated);
     try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
     updateInvoiceRecord(id, updates).catch((e) => console.error("[mirabee] updateInvoiceRecord failed", e));
+  }
+
+  // Delete invoice — remove from local state, localStorage, and Supabase
+  function handleDelete(id: string) {
+    const updated = saved.filter((inv) => inv.id !== id);
+    setSaved(updated);
+    try { localStorage.setItem(LS_INVOICES, JSON.stringify(updated)); } catch { /**/ }
+    deleteInvoice(id).then(({ ok, error: delErr }) => {
+      if (!ok) setSyncError(`Delete failed: ${delErr ?? "unknown error"}`);
+    });
   }
 
   // Line helpers
@@ -230,20 +252,41 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
+      {/* Post-create invoice preview overlay */}
+      {justCreatedInv && (
+        <InvoicePreview invoice={justCreatedInv} onClose={() => setJustCreatedInv(null)} />
+      )}
+
       <div style={{ padding: "16px var(--mb-page-x) 40px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* Sync error banner */}
         {syncError && (
           <div style={{ background: "#fef3c7", border: "1px solid #f59e0b", borderRadius: 10,
-            padding: "10px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.5 }}>
-            <strong>⚠ Sync error</strong> — invoices are saved on this device only.<br />
-            <span style={{ fontFamily: "monospace", fontSize: 11 }}>{syncError}</span>
+            padding: "10px 14px", fontSize: 12, color: "#92400e", lineHeight: 1.5,
+            display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+            <div>
+              <strong>⚠ Sync error</strong> — invoices are saved on this device only.<br />
+              <span style={{ fontFamily: "monospace", fontSize: 11 }}>{syncError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSyncError(null)}
+              style={{ background: "none", border: "none", cursor: "pointer",
+                color: "#92400e", fontSize: 18, lineHeight: 1, flexShrink: 0, padding: 0 }}
+              aria-label="Dismiss"
+            >×</button>
           </div>
         )}
 
         {/* LIST VIEW */}
         {view === "list" && (
-          <InvoiceList saved={saved} onNew={handleNew} onEdit={handleEdit} onUpdate={handleUpdate} />
+          <InvoiceList
+            saved={saved}
+            onNew={handleNew}
+            onEdit={handleEdit}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+          />
         )}
 
         {/* FORM VIEW */}
@@ -253,7 +296,7 @@ export default function InvoicesPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <button
                 type="button"
-                onClick={() => setView("list")}
+                onClick={handleBack}
                 style={{ background: "none", border: "none", cursor: "pointer", padding: 4,
                   display: "flex", alignItems: "center", color: "var(--mb-blue)" }}
               >
@@ -274,11 +317,20 @@ export default function InvoicesPage() {
               <Grid2>
                 <Field label="Invoice #"><input className="mb-field" value={invNum} onChange={(e) => setInvNum(e.target.value)} /></Field>
                 <Field label="Status">
-                  <select className="mb-field" value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
-                    <option value="draft">Draft</option>
-                    <option value="sent">Sent</option>
-                    <option value="paid">Paid</option>
-                  </select>
+                  {/* "Paid" status is set via Mark as Paid in the list, not the form */}
+                  {editingInv?.status === "paid" ? (
+                    <div style={{ display: "flex", alignItems: "center", height: 42 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "var(--mb-green-dark)",
+                        background: "var(--mb-green-light)", borderRadius: 20, padding: "4px 10px" }}>
+                        Paid — use list to update
+                      </span>
+                    </div>
+                  ) : (
+                    <select className="mb-field" value={status} onChange={(e) => setStatus(e.target.value as "draft" | "sent")}>
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                    </select>
+                  )}
                 </Field>
               </Grid2>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
@@ -353,7 +405,7 @@ export default function InvoicesPage() {
                   textTransform: "uppercase", letterSpacing: "0.06em" }}>Line Items</span>
                 <span style={{ fontSize: 12, color: "var(--mb-text-muted)" }}>{lines.length} item{lines.length !== 1 ? "s" : ""}</span>
               </div>
-              {lines.map((line, idx) => (
+              {lines.map((line) => (
                 <div key={line._id} style={{
                   padding: "12px 16px",
                   borderTop: "1px solid var(--mb-border)",
@@ -456,6 +508,8 @@ export default function InvoicesPage() {
   );
 }
 
+// ── Shared layout helpers ─────────────────────────────────────────────────────
+
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-card" style={{ padding: "14px 16px" }}>
@@ -490,3 +544,6 @@ function TRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+// Keep FileText import satisfied (used on landing page via icon ref)
+export { FileText };

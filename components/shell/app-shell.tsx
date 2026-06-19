@@ -71,14 +71,7 @@ function DefaultHeader() {
   return (
     <header className="mb-app-header">
       <MirabeeLogo size="sm" showWordmark direction="row" />
-      <div style={{ display: 'flex', gap: 8 }}>
-        <InvoiceNotifications />
-        <Link href="/settings">
-          <button className="mb-hdr-btn" aria-label="Settings">
-            <Settings size={17} />
-          </button>
-        </Link>
-      </div>
+      <InvoiceNotifications />
     </header>
   );
 }

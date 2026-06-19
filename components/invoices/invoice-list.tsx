@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ChevronRight, Eye, CheckCircle2 } from "lucide-react";
+import { Plus, ChevronRight, Eye, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { InvoicePreview } from "@/components/invoices/invoice-preview";
 import type { SavedInvoice } from "@/components/invoices/invoice-history";
@@ -26,9 +26,10 @@ type Props = {
   onNew: () => void;
   onEdit: (inv: SavedInvoice) => void;
   onUpdate: (id: string, updates: Partial<SavedInvoice>) => void;
+  onDelete: (id: string) => void;
 };
 
-export function InvoiceList({ saved, onNew, onEdit, onUpdate }: Props) {
+export function InvoiceList({ saved, onNew, onEdit, onUpdate, onDelete }: Props) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [previewInv, setPreviewInv] = useState<SavedInvoice | null>(null);
   const [payingId,   setPayingId]   = useState<string | null>(null);
@@ -281,7 +282,26 @@ export function InvoiceList({ saved, onNew, onEdit, onUpdate }: Props) {
                           background: "transparent",
                           fontSize: 13, fontWeight: 700, color: "var(--mb-text-muted)", cursor: "pointer",
                         }}>
-                        Edit &amp; Re-issue
+                        <Pencil size={15} /> Edit Invoice
+                      </button>
+
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete invoice ${inv.invoiceNumber} for ${inv.clientName}? This cannot be undone.`)) {
+                            onDelete(inv.id);
+                            setExpandedId(null);
+                          }
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                          width: "100%", padding: "11px 0",
+                          border: "1.5px solid var(--mb-pink)", borderRadius: "var(--mb-r-lg)",
+                          background: "var(--mb-pink-light)",
+                          fontSize: 13, fontWeight: 700, color: "var(--mb-pink)", cursor: "pointer",
+                        }}>
+                        <Trash2 size={15} /> Delete Invoice
                       </button>
 
                     </div>

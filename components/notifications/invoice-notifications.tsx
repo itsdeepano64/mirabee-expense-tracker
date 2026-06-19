@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import type { SavedInvoice } from "@/components/invoices/invoice-history";
+import { getInvoices } from "@/lib/actions/invoices";
 
 const LS_INVOICES = "mirabee-invoices";
 
@@ -13,8 +14,8 @@ type Urgency = "overdue" | "soon" | "upcoming";
 type NotifItem = {
   inv: SavedInvoice;
   urgency: Urgency;
-  daysLabel: string;  // e.g. "3 days overdue" or "Due in 5 days"
-  daysNum: number;    // negative = overdue
+  daysLabel: string;
+  daysNum: number;
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -47,45 +48,49 @@ function classify(inv: SavedInvoice): NotifItem | null {
   return { inv, urgency, daysLabel, daysNum };
 }
 
+function buildNotifs(list: SavedInvoice[]): NotifItem[] {
+  const notifs = list.flatMap((inv) => { const n = classify(inv); return n ? [n] : []; });
+  notifs.sort((a, b) => a.daysNum - b.daysNum);
+  return notifs;
+}
+
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function InvoiceNotifications() {
-  const [items,  setItems]  = useState<NotifItem[]>([]);
-  const [open,   setOpen]   = useState(false);
+  const [items, setItems] = useState<NotifItem[]>([]);
+  const [open,  setOpen]  = useState(false);
 
-  // Load invoices from localStorage on mount (fast, no network)
+  // Load from localStorage on mount (fast), then hydrate from Supabase for accuracy
   useEffect(() => {
     try {
-      const list: SavedInvoice[] = JSON.parse(
-        localStorage.getItem(LS_INVOICES) ?? "[]"
-      );
-      const notifs = list.flatMap((inv) => {
-        const n = classify(inv);
-        return n ? [n] : [];
-      });
-      // Sort: overdue first (most days overdue), then soon, then upcoming
-      notifs.sort((a, b) => a.daysNum - b.daysNum);
-      setItems(notifs);
+      const list: SavedInvoice[] = JSON.parse(localStorage.getItem(LS_INVOICES) ?? "[]");
+      setItems(buildNotifs(list));
     } catch { /**/ }
+
+    void getInvoices().then(({ invoices, ok }) => {
+      if (!ok) return;
+      setItems(buildNotifs(invoices));
+      try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
+    }).catch(() => { /**/ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-check whenever sheet opens (picks up newly created invoices)
+  // Re-check on open: show localStorage instantly, then refresh from Supabase in background
   function handleOpen() {
     try {
-      const list: SavedInvoice[] = JSON.parse(
-        localStorage.getItem(LS_INVOICES) ?? "[]"
-      );
-      const notifs = list.flatMap((inv) => {
-        const n = classify(inv);
-        return n ? [n] : [];
-      });
-      notifs.sort((a, b) => a.daysNum - b.daysNum);
-      setItems(notifs);
+      const list: SavedInvoice[] = JSON.parse(localStorage.getItem(LS_INVOICES) ?? "[]");
+      setItems(buildNotifs(list));
     } catch { /**/ }
     setOpen(true);
+
+    void getInvoices().then(({ invoices, ok }) => {
+      if (!ok) return;
+      setItems(buildNotifs(invoices));
+      try { localStorage.setItem(LS_INVOICES, JSON.stringify(invoices)); } catch { /**/ }
+    }).catch(() => { /**/ });
   }
 
   const urgentCount = items.filter(
@@ -93,9 +98,9 @@ export function InvoiceNotifications() {
   ).length;
 
   const groups: { label: string; urgency: Urgency; color: string; bg: string }[] = [
-    { label: "Overdue",   urgency: "overdue",  color: "#dc2626", bg: "#fef2f2" },
-    { label: "Due Soon",  urgency: "soon",     color: "#d97706", bg: "#fffbeb" },
-    { label: "Upcoming",  urgency: "upcoming", color: "var(--mb-text-muted)", bg: "var(--mb-border)" },
+    { label: "Overdue",  urgency: "overdue",  color: "#dc2626", bg: "#fef2f2" },
+    { label: "Due Soon", urgency: "soon",     color: "#d97706", bg: "#fffbeb" },
+    { label: "Upcoming", urgency: "upcoming", color: "var(--mb-text-muted)", bg: "var(--mb-border)" },
   ];
 
   return (
@@ -196,7 +201,6 @@ export function InvoiceNotifications() {
                   if (groupItems.length === 0) return null;
                   return (
                     <div key={urgency} style={{ marginBottom: 6 }}>
-                      {/* Group header */}
                       <div style={{
                         padding: "6px 18px",
                         fontSize: 10, fontWeight: 800,
@@ -204,19 +208,16 @@ export function InvoiceNotifications() {
                       }}>
                         {label} · {groupItems.length}
                       </div>
-                      {/* Rows */}
                       {groupItems.map(({ inv, daysLabel }) => (
                         <div key={inv.id} style={{
                           padding: "11px 18px",
                           display: "flex", alignItems: "center", gap: 12,
                           borderBottom: "1px solid var(--mb-border)",
                         }}>
-                          {/* Urgency dot */}
                           <div style={{
                             width: 10, height: 10, borderRadius: "50%",
                             flexShrink: 0, background: color,
                           }} />
-                          {/* Info */}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
                               fontSize: 14, fontWeight: 700,
@@ -232,15 +233,13 @@ export function InvoiceNotifications() {
                               )}
                             </div>
                           </div>
-                          {/* Amount + label */}
                           <div style={{ textAlign: "right", flexShrink: 0 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--mb-text)" }}>
                               {fmt(inv.total)}
                             </div>
                             <div style={{
                               fontSize: 10, fontWeight: 700,
-                              color: color,
-                              background: bg,
+                              color, background: bg,
                               borderRadius: 20, padding: "2px 7px",
                               marginTop: 2, display: "inline-block",
                             }}>

@@ -60,13 +60,23 @@ export async function updateInvoiceRecord(
 ): Promise<void> {
   const supabase = createServerClient();
   const row: Record<string, unknown> = {};
-  if (updates.status       !== undefined) row.status        = updates.status;
-  if (updates.amountPaid   !== undefined) row.amount_paid   = updates.amountPaid ?? null;
-  if (updates.paymentNotes !== undefined) row.payment_notes = updates.paymentNotes ?? null;
-  if (updates.paidAt       !== undefined) row.paid_at       = updates.paidAt ?? null;
-  if (updates.data         !== undefined) row.data          = updates.data;
+  if (updates.invoiceNumber !== undefined) row.invoice_number = updates.invoiceNumber;
+  if (updates.clientName    !== undefined) row.client_name    = updates.clientName;
+  if (updates.total         !== undefined) row.total          = updates.total;
+  if (updates.status        !== undefined) row.status         = updates.status;
+  if (updates.amountPaid    !== undefined) row.amount_paid    = updates.amountPaid ?? null;
+  if (updates.paymentNotes  !== undefined) row.payment_notes  = updates.paymentNotes ?? null;
+  if (updates.paidAt        !== undefined) row.paid_at        = updates.paidAt ?? null;
+  if (updates.data          !== undefined) row.data           = updates.data;
   if (Object.keys(row).length === 0) return;
   await supabase.from("invoices").update(row).eq("id", id);
+}
+
+export async function deleteInvoice(id: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("invoices").delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }
 
 // ── From info actions ─────────────────────────────────────────────────────────
